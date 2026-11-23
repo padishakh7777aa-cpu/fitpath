@@ -36,6 +36,14 @@ const POSES={
     return {foot:{x:0,y:0},hip,shoulder:s,hand:{x:s.x+L(6,2,p),y:s.y+L(4,62,p)},legDir:1,armDir:1,plate:true,cx:150}},
   pullup:p=>{const hy=L(151,205,p),s={x:L(2,4,p),y:hy},hip={x:s.x+2,y:s.y-55};
     return {foot:{x:hip.x-14,y:hip.y-87},hip,shoulder:s,hand:{x:0,y:212},legDir:1,armDir:-1,pullbar:true,cx:150}},
+  row:p=>{const hip={x:-30,y:62},s=sh(hip,65);
+    return {foot:{x:0,y:0},hip,shoulder:s,hand:{x:L(s.x,-2,p),y:L(s.y-60,62,p)},legDir:1,armDir:-1,plate:true,cx:150}},
+  rdl:p=>{const hip={x:L(-3,-38,p),y:L(89,78,p)},s=sh(hip,L(5,70,p));
+    return {foot:{x:0,y:0},hip,shoulder:s,hand:{x:s.x,y:s.y-61},legDir:1,armDir:1,plate:true,cx:150}},
+  curl:p=>{const hip={x:-2,y:89},s=sh(hip,0),th=L(5,150,p)*Math.PI/180,el={x:-2,y:112};
+    return {foot:{x:0,y:0},hip,shoulder:s,elbow:el,hand:{x:el.x+30*Math.sin(th),y:el.y-30*Math.cos(th)},legDir:1,armDir:-1,plate:true,cx:150}},
+  calf:p=>{const hip={x:-2,y:89+10*p},s=sh(hip,0);
+    return {foot:{x:0,y:10*p},hip,shoulder:s,hand:{x:s.x+4,y:s.y-60},legDir:1,armDir:-1,footAng:L(0,35,p),cx:150}},
   bridge:p=>{const s={x:-55,y:6},th=L(2,45,p)*Math.PI/180,hip={x:s.x+TL*Math.cos(th),y:s.y+TL*Math.sin(th)};
     return {foot:{x:35,y:0},hip,shoulder:s,hand:{x:s.x+61,y:s.y-4},legDir:1,armDir:1,cx:185}},
 };
@@ -124,7 +132,7 @@ function makeFigure(svg){
       if(P.plate&&!P.bench&&!P.pullbar){}
     }
     const leg=ik(P.hip,P.foot,TH,SH,P.legDir);
-    const arm=ik(P.shoulder,P.hand,UA,FA,P.armDir);
+    const arm=P.elbow?{mid:P.elbow,end:P.hand}:ik(P.shoulder,P.hand,UA,FA,P.armDir);
     const farFoot=P.foot2||{x:P.foot.x-7,y:P.foot.y};
     const farLeg=ik(P.hip,farFoot,TH,SH,P.legDir);
     const off={x:-5,y:0};
