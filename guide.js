@@ -24,6 +24,14 @@ function suggestWeight(e,key){
   if(ratio&&S.prof&&S.prof.w)return r25(S.prof.w*ratio[lvI()]);
   return null;
 }
+/* звук */
+let _ac=null;
+function beep(f=880,d=.12,v=.15){
+  if(S.snd===false)return;
+  try{_ac=_ac||new (window.AudioContext||window.webkitAudioContext)();if(_ac.state==='suspended')_ac.resume();
+    const o=_ac.createOscillator(),gn=_ac.createGain();o.frequency.value=f;o.type='sine';gn.gain.value=v;o.connect(gn);gn.connect(_ac.destination);
+    o.start();gn.gain.exponentialRampToValueAtTime(.0001,_ac.currentTime+d);o.stop(_ac.currentTime+d+.02)}catch(e){}
+}
 function guideDay(g){return progById(g.pid).days[g.di]}
 function buildSteps(g){
   const D=guideDay(g),steps=[];
@@ -44,7 +52,7 @@ function gDur(g){const D=guideDay(g);let s=0;D.ex.forEach(e=>{s+=e.s*(45+e.rest)
 
 /* ---------- экран ---------- */
 function guideScreen(){
-  return `<div id="gtop"><button class="back" id="gexit" style="margin:0">✕ Выйти</button><div class="hint" id="gstep"></div></div>
+  return `<div id="gtop"><button class="back" id="gexit" style="margin:0">✕ Выйти</button><div class="hint" id="gstep"></div><button class="chip" id="gsnd">${S.snd===false?'🔇':'🔊'}</button></div>
   <div id="gprog"><div id="gprogbar"></div></div>
   <div class="stage3" id="gstage" style="height:250px"><div class="phase" id="gph"></div></div>
   <div id="gbody"></div>`;
@@ -63,6 +71,7 @@ function bindGuide(){
   $('#gexit').onclick=()=>{
     if(g.res.some(x=>x.t==='work')){if(confirm('Завершить тренировку? Выполненные подходы сохранятся.'))finishGuided()}
     else if(confirm('Выйти без сохранения?')){guideCleanup();S.g=null;store.set('gsess',null);S.screen=null;render()}};
+  const sb=$('#gsnd');if(sb)sb.onclick=()=>{S.snd=S.snd===false;store.set('snd',S.snd);sb.textContent=S.snd===false?'🔇':'🔊';if(S.snd!==false)beep(880,.1)};
   updateGuide();
 }
 function guideCleanup(){
@@ -172,7 +181,8 @@ function gRest(g,D,steps,s,nx){
     const left=Math.max(0,Math.ceil((g.restEnd-Date.now())/1000)),c=$('#gcount'),ring=$('#gring');if(!c||!ring)return;
     c.textContent=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;
     ring.style.setProperty('--p',Math.max(0,Math.min(100,left/g.restTotal*100))+'%');
-    if(left<=0){try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}try{tg&&tg.HapticFeedback.notificationOccurred('warning')}catch(e){}adv()}
+    if(left<=3&&left>0&&g._lb!==left){g._lb=left;beep(660,.1);try{tg&&tg.HapticFeedback.impactOccurred('light')}catch(e){}}
+    if(left<=0){beep(1040,.4,.2);try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}try{tg&&tg.HapticFeedback.notificationOccurred('warning')}catch(e){}adv()}
   };
   if(GD.timer)clearInterval(GD.timer);GD.timer=setInterval(tick,250);tick();
 }

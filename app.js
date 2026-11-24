@@ -29,7 +29,7 @@ function cloudSync(){
     if(--pending===0&&changed&&!S.sess&&!S.ex)render();})});
 }
 const today=()=>new Date().toISOString().slice(0,10);
-const S={level:store.get('level',null),tab:'plan',ex:null,prof:store.get('prof',{sex:'m',age:25,w:75,h:178,act:1.55,goal:'mass'}),age18:false,done:store.get('done',{}),log:store.get('log',{}),view:35,prog:store.get('prog',null),sess:store.get('sess',null),g:store.get('gsess',null),screen:null,more:'tools'};
+const S={level:store.get('level',null),tab:'plan',ex:null,prof:store.get('prof',{sex:'m',age:25,w:75,h:178,act:1.55,goal:'mass'}),age18:false,done:store.get('done',{}),log:store.get('log',{}),view:35,prog:store.get('prog',null),sess:store.get('sess',null),g:store.get('gsess',null),snd:store.get('snd',true),screen:null,more:'tools'};
 let activePlayer=null;
 const stopPlayer=()=>{if(activePlayer){activePlayer.stop();activePlayer=null}};
 const quoteOfDay=()=>QUOTES[Math.floor(Date.now()/864e5)%QUOTES.length];

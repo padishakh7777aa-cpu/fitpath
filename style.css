@@ -127,3 +127,8 @@ details.card[open] summary{margin-bottom:8px;color:var(--accent)}
 .ringin{width:140px;height:140px;border-radius:50%;background:var(--bg);display:grid;place-items:center}
 .ringin b{font-family:Impact,Haettenschweiler,sans-serif;font-size:44px;font-weight:400;color:var(--text)}
 .cta{border-color:rgba(245,179,1,.5);background:linear-gradient(135deg,#1e1507,#121217)}
+
+.ach{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0}
+.ach .a{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;text-align:center;opacity:.45;filter:grayscale(1)}
+.ach .a.on{opacity:1;filter:none;border-color:rgba(245,179,1,.5);background:linear-gradient(135deg,#1e1507,#15151b)}
+.ach .i{font-size:30px}.ach b{display:block;font-size:14px;margin-top:4px}.ach span{font-size:11px;color:var(--hint)}

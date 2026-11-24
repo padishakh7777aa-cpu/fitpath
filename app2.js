@@ -138,9 +138,10 @@ function finishSession(){
   hap('heavy');render();
 }
 function summaryScreen(){
-  const s=S.summary;
+  const s=S.summary;if(!s.ach)s.ach=newAchievements();
   return `<div class="hero"><div class="q">Lightweight, baby!</div><div class="tr">${s.name} выполнена</div></div>
   <div class="stats"><div><b>${s.sets}</b><span>${plural(s.sets,['подход','подхода','подходов'])}</span></div><div><b>${(s.tonnage/1000).toFixed(1)} т</b><span>тоннаж</span></div><div><b>${s.mins}'</b><span>минут</span></div></div>
+  ${s.ach.length?`<h2>🏆 Новые достижения</h2>${s.ach.map(a=>`<div class="card" style="border-color:var(--accent)"><div class="row"><div style="font-size:34px">${a.ico}</div><div><b>${a.t}</b><div class="hint">${a.d}</div></div></div></div>`).join('')}`:''}
   ${s.sug.length?`<h2>В следующий раз</h2><div class="card"><ul>${s.sug.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:'<div class="card hint">Закрой верх диапазона повторов во всех подходах — и приложение подскажет, когда повышать вес.</div>'}
   <button class="btn" id="share">📤 Поделиться</button><button class="btn ghost" id="sumok" style="margin-top:8px">Готово</button>`;
 }
@@ -289,12 +290,14 @@ function progScreen(){
   const lab=weeks.map(w=>{const d=new Date(w);return d.getDate()+'.'+String(d.getMonth()+1).padStart(2,'0')});
   const lastBw=bwPts.length?+bwPts[bwPts.length-1].y.toFixed(1):'';
   return `<h1>Прогресс</h1>
+  ${weeklyReport()}
   <div class="card"><b>⚖️ Вес тела</b>
    <div class="logrow"><input id="bw_in" type="number" inputmode="decimal" step="0.1" placeholder="Вес сегодня, кг" value=""><button class="btn small" id="bw_save" style="width:auto">Записать</button></div>
    ${lineChart(bwPts,{unit:'кг'})}${lastBw?`<div class="hint">Последняя запись: ${lastBw} кг. Смотри тренд по неделе, а не отдельный день.</div>`:''}</div>
   <div class="card"><b>💪 Сила по упражнению (расчётный 1ПМ)</b>
    ${keys.length?`<select id="pg_ex" style="margin:8px 0">${keys.map(k=>`<option value="${k}" ${k===sel?'selected':''}>${exName(k)}</option>`).join('')}</select>${lineChart(exPts,{unit:'кг'})}`:'<div class="hint" style="padding:10px 0">Заверши тренировку или запиши подход в карточке упражнения, и здесь появится график силы.</div>'}</div>
   <div class="card"><b>📊 Недельный тоннаж</b><div class="hint">Сумма вес × повторы за неделю, последние 8 недель.</div>${barChart(vol,lab)}</div>
+  ${achGrid()}
   <div class="hint">Данные хранятся на твоём устройстве. 1ПМ — расчёт по формуле Эпли, ориентир, а не тест.</div>`;
 }
 function bindProg(){
@@ -359,4 +362,51 @@ function freeAddHtml(){
    <select id="fx_sel" style="margin-top:8px"><option value="">— выбери из списка —</option>${Object.keys(EX).map(k=>`<option value="${k}">${EX[k].name}</option>`).join('')}</select>
    <input id="fx_name" placeholder="…или впиши своё название" style="margin-top:8px">
    <button class="btn" id="fx_add" style="margin-top:8px">Добавить</button></div>`;
+}
+
+/* ---------- Достижения ---------- */
+function totalTonnage(){let t=0;Object.values(S.log).forEach(a=>a.forEach(e=>t+=e.w*e.r));return t}
+function bestW(k){return Math.max(0,...(S.log[k]||[]).map(e=>e.w))}
+function prCount(){let n=0;Object.values(S.log).forEach(a=>{let m=0;a.forEach(e=>{const v=e1rm(e.w,e.r);if(m&&v>m*1.0001)n++;if(v>m)m=v})});return n}
+function longestStreak(){const ks=Object.keys(S.done).sort();let best=0,cur=0,prev=null;ks.forEach(k=>{const d=new Date(k).getTime();cur=(prev&&Math.round((d-prev)/864e5)===1)?cur+1:1;prev=d;if(cur>best)best=cur});return best}
+function achievements(){
+  const w=Object.keys(S.done).length,t=totalTonnage(),st=longestStreak(),bw=Object.keys(S.bw||store.get('bw',{})).length;
+  return [
+   {id:'first',ico:'🥇',t:'Первый шаг',d:'Заверши первую тренировку',ok:w>=1},
+   {id:'w5',ico:'💪',t:'Втягиваюсь',d:'5 тренировок',ok:w>=5},
+   {id:'w25',ico:'🔥',t:'Режим зверя',d:'25 тренировок',ok:w>=25},
+   {id:'w100',ico:'👑',t:'Легенда зала',d:'100 тренировок',ok:w>=100},
+   {id:'st3',ico:'📅',t:'Три дня подряд',d:'Серия 3 дня',ok:st>=3},
+   {id:'st7',ico:'⚡',t:'Неделя без пропусков',d:'Серия 7 дней',ok:st>=7},
+   {id:'t10',ico:'🏗️',t:'10 тонн',d:'Суммарный тоннаж 10 т',ok:t>=10000},
+   {id:'t100',ico:'🚛',t:'100 тонн',d:'Суммарный тоннаж 100 т',ok:t>=100000},
+   {id:'pr1',ico:'📈',t:'Новый рекорд',d:'Улучши расчётный 1ПМ',ok:prCount()>=1},
+   {id:'pr10',ico:'🚀',t:'Рекордсмен',d:'10 личных рекордов',ok:prCount()>=10},
+   {id:'b100',ico:'🏋️',t:'Сотка в жиме',d:'Жим лёжа от 100 кг',ok:bestW('bench')>=100},
+   {id:'s140',ico:'🦵',t:'Присед 140',d:'Присед от 140 кг',ok:bestW('squat')>=140},
+   {id:'d180',ico:'⛓️',t:'Становая 180',d:'Становая от 180 кг',ok:bestW('deadlift')>=180},
+   {id:'bw7',ico:'⚖️',t:'Контроль веса',d:'7 записей веса тела',ok:bw>=7}
+  ];
+}
+function newAchievements(){
+  const seen=store.get('ach',[]),all=achievements(),fresh=all.filter(a=>a.ok&&!seen.includes(a.id));
+  if(fresh.length)store.set('ach',all.filter(a=>a.ok).map(a=>a.id));
+  return fresh;
+}
+function achGrid(){
+  const a=achievements(),n=a.filter(x=>x.ok).length;
+  return `<div class="row sb"><h2 style="margin:0">🏆 Достижения</h2><span class="tag">${n}/${a.length}</span></div>
+  <div class="ach">${a.map(x=>`<div class="a ${x.ok?'on':''}"><div class="i">${x.ico}</div><b>${x.t}</b><span>${x.d}</span></div>`).join('')}</div>`;
+}
+/* ---------- Итоги недели ---------- */
+function weeklyReport(){
+  const ws=weekStart(Date.now()),pw=ws-7*864e5;let ton=[0,0],sets=[0,0],pr=0;const days=[new Set(),new Set()];
+  Object.values(S.log).forEach(a=>{let m=0;a.forEach(e=>{const v=e1rm(e.w,e.r);
+    if(e.ts){const w=weekStart(e.ts),i=w===ws?0:w===pw?1:-1;if(i>=0){ton[i]+=e.w*e.r;sets[i]++;days[i].add(new Date(e.ts).toDateString());if(i===0&&m&&v>m*1.0001)pr++}}
+    if(v>m)m=v})});
+  const diff=ton[1]?Math.round((ton[0]-ton[1])/ton[1]*100):null;
+  const verdict=sets[0]===0?'На этой неделе пока нет тренировок — самое время начать.':diff==null?'Отличное начало недели!':diff>=10?'Объём растёт — так держать.':diff<=-25?'Объём заметно ниже прошлой недели. Если это не разгрузка, стоит проверить сон и питание.':'Стабильная неделя — это тоже прогресс.';
+  return `<div class="card"><b>📅 Итоги недели</b>
+   <div class="stats" style="margin:8px 0"><div><b>${days[0].size}</b><span>тренировок</span></div><div><b>${(ton[0]/1000).toFixed(1)} т</b><span>тоннаж</span></div><div><b>${pr}</b><span>рекордов</span></div></div>
+   <div class="hint">${diff==null?'':`К прошлой неделе: ${diff>=0?'▲':'▼'} ${Math.abs(diff)}% по тоннажу. `}${verdict}</div></div>`;
 }
