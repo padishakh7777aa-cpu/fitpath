@@ -52,6 +52,13 @@ const POSES={
     return {foot:{x:32,y:0},hip,shoulder:{x:sx,y:sy},hand:{x:hip.x+2,y:hip.y+9},legDir:1,armDir:1,plate:true,bench2:true,cx:175}},
   pushdown:p=>{const hip={x:-2,y:89},s=sh(hip,4),el={x:s.x+4,y:s.y-32},ph=L(100,2,p)*Math.PI/180;
     return {foot:{x:0,y:0},hip,shoulder:s,elbow:el,hand:{x:el.x+30*Math.sin(ph),y:el.y-30*Math.cos(ph)},legDir:1,armDir:-1,cable:{x:14,y:236},cbar:true,cx:150}},
+  incline:p=>{const a=30*Math.PI/180,hip={x:0,y:34},s={x:hip.x-55*Math.cos(a),y:hip.y+55*Math.sin(a)},n={x:Math.sin(a),y:Math.cos(a)},
+    bot={x:s.x+n.x*16+4,y:s.y+n.y*16},top={x:s.x+2,y:s.y+60};
+    return {foot:{x:36,y:0},hip,shoulder:s,hand:{x:L(bot.x,top.x,p),y:L(bot.y,top.y,p)},legDir:1,armDir:1,plate:true,incline:true,cx:175}},
+  legpress:p=>{const hip={x:-14,y:34},d=L(50,86,p),foot={x:hip.x+.7071*d,y:hip.y+.7071*d},s={x:hip.x-55*Math.cos(50*Math.PI/180),y:hip.y+55*Math.sin(50*Math.PI/180)};
+    return {foot,hip,shoulder:s,hand:{x:hip.x-8,y:hip.y+12},legDir:-1,armDir:1,footAng:-135,legpress:true,cx:150}},
+  lateral:p=>{const hip={x:-2,y:89},s=sh(hip,3);
+    return {foot:{x:0,y:0},hip,shoulder:s,hand:{x:s.x,y:s.y-60},legDir:1,armDir:1,lateral:true,lat:p,cx:150}},
   bridge:p=>{const s={x:-55,y:6},th=L(2,45,p)*Math.PI/180,hip={x:s.x+TL*Math.cos(th),y:s.y+TL*Math.sin(th)};
     return {foot:{x:35,y:0},hip,shoulder:s,hand:{x:s.x+61,y:s.y-4},legDir:1,armDir:1,cx:185}},
 };

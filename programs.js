@@ -147,7 +147,8 @@ const PROGS=[
 ];
 
 (function(){
+  const map2={'text:Жим на наклонной':'incline','text:Жим гантелей на наклонной':'incline','text:Жим гантелей на наклонной (30°)':'incline','text:Жим ногами':'legpress','text:Жим ногами / фронтальный присед':'legpress','text:Махи в стороны':'lateral','text:Махи гантелей в стороны':'lateral','text:Махи на блоке':'lateral'};
   const map={'text:Брусья':'dips','text:Брусья / жим гантелей':'dips','text:Тяга верхнего блока':'pulldown','text:Тяга верхнего блока (широкий хват)':'pulldown','text:Тяга верхнего блока узким':'pulldown',
     'text:Разгибания на блоке':'pushdown','text:Разгибания на блоке (трицепс)':'pushdown','text:Трицепс на блоке':'pushdown'};
-  PROGS.forEach(p=>p.days.forEach(dy=>dy.ex.forEach(e=>{if(map[e.id])e.id=map[e.id];if(e.id==='bridge'&&/Хип-траст/.test(e.note||''))e.id='hipthrust'})));
+  PROGS.forEach(p=>p.days.forEach(dy=>dy.ex.forEach(e=>{if(map2[e.id])e.id=map2[e.id];if(map[e.id])e.id=map[e.id];if(e.id==='bridge'&&/Хип-траст/.test(e.note||''))e.id='hipthrust'})));
 })();

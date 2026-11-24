@@ -3,6 +3,7 @@ function has3D(){try{const c=document.createElement('canvas');return !!(window.T
 
 const CAM={ // цель камеры и дистанция по упражнениям
   dips:{tx:0,ty:120,d:370},pulldown:{tx:0,ty:115,d:380},hipthrust:{tx:-10,ty:40,d:300},pushdown:{tx:5,ty:100,d:340},
+  incline:{tx:-25,ty:60,d:320},legpress:{tx:10,ty:65,d:330},lateral:{tx:0,ty:100,d:340},
   default:{tx:-5,ty:88,d:330},pushup:{tx:-65,ty:40,d:360},plank:{tx:-65,ty:40,d:360},
   bench:{tx:-25,ty:50,d:300},pullup:{tx:0,ty:120,d:400},bridge:{tx:-10,ty:30,d:280},
   ohp:{tx:0,ty:105,d:380},curl:{tx:0,ty:90,d:320},row:{tx:0,ty:70,d:320},calf:{tx:0,ty:80,d:330}
@@ -52,6 +53,9 @@ function Athlete3D(key,opts={}){
   const dyn=new T.Group();scene.add(dyn);
   const cableM=seg(.7,.7,steel,dyn),cbarM=new T.Mesh(new T.CylinderGeometry(1.5,1.5,86,14),steel);cbarM.rotation.x=Math.PI/2;cbarM.castShadow=true;dyn.add(cbarM);
   cableM.visible=false;cbarM.visible=false;
+  const plat=new T.Mesh(new T.BoxGeometry(5,60,76),mat(0x3a3a46,.5,.6));plat.castShadow=true;plat.visible=false;dyn.add(plat);
+  const dbs=[0,1].map(()=>{const g=new T.Group();const h=new T.Mesh(new T.CylinderGeometry(1.6,1.6,14,12),steel);h.rotation.z=Math.PI/2;g.add(h);
+    [-1,1].forEach(k=>{const hd=new T.Mesh(new T.CylinderGeometry(6,6,6,20),plateM);hd.rotation.z=Math.PI/2;hd.position.x=k*8;hd.castShadow=true;g.add(hd)});g.visible=false;dyn.add(g);return g});
   const bar=new T.Group();group.add(bar);bar.visible=false;
   const barM=add(new T.Mesh(new T.CylinderGeometry(1.5,1.5,230,16),steel),bar);barM.rotation.x=Math.PI/2;
   [-1,1].forEach(s=>{
@@ -72,6 +76,14 @@ function Athlete3D(key,opts={}){
       [-1,1].forEach(s=>{box(8,b+30,8,0x2b2b34,0,(b+30)/2,s*105);box(60,6,40,0x2b2b34,0,3,s*105)});
       const br=new T.Mesh(new T.CylinderGeometry(1.9,1.9,215,18),steel);br.rotation.x=Math.PI/2;br.position.set(0,b,0);br.castShadow=true;props.add(br);
       box(10,6,230,0x2b2b34,0,b+30,0);}
+    if(P.incline){const a=30*Math.PI/180,pad=box(130,9,34,0x1d1d24,0,0,0);pad.rotation.z=-a;pad.position.set(-30,38,0);
+      const red=box(128,3,32,0xc8102e,0,0,0);red.rotation.z=-a;red.position.set(-30+Math.sin(a)*5,38+Math.cos(a)*5,0);
+      const seat=box(30,9,34,0x1d1d24,6,26,0);[-1,1].forEach(z=>box(5,28,5,0x3a3a46,-50,14,z*12));box(5,26,5,0x3a3a46,8,13,0);
+      [-1,1].forEach(sd=>{box(6,150,6,0x2b2b34,-56,75,sd*58);box(18,5,6,GOLD,-56,95,sd*58)});}
+    if(P.legpress){const rs=box(40,10,34,0x1d1d24,-30,24,0);rs.position.set(-31,30,0);
+      const pad=box(70,9,34,0x1d1d24,0,0,0);pad.rotation.z=50*Math.PI/180;pad.position.set(-38,58,0);
+      const red=box(68,3,32,0xc8102e,0,0,0);red.rotation.z=50*Math.PI/180;red.position.set(-38+Math.sin(50*Math.PI/180)*5,58+Math.cos(50*Math.PI/180)*5,0);
+      [-1,1].forEach(sd=>{const rail=box(190,5,6,0x2b2b34,0,0,0);rail.rotation.z=45*Math.PI/180;rail.position.set(40,80,sd*44);box(6,60,6,0x2b2b34,-60,30,sd*44);box(6,30,6,0x2b2b34,120,15,sd*44)});}
     if(P.bench2){box(46,38,36,0x1d1d24,-62,19,0);box(44,3,34,0xc8102e,-62,38.5,0)}
     if(P.dipbar){[-1,1].forEach(s=>{const br=new T.Mesh(new T.CylinderGeometry(1.9,1.9,76,16),steel);br.rotation.z=Math.PI/2;br.position.set(0,112,s*26);br.castShadow=true;props.add(br);
       box(7,112,7,0x2b2b34,-36,56,s*26);box(30,5,30,0x2b2b34,-36,2,s*26)});}
@@ -143,17 +155,22 @@ function Athlete3D(key,opts={}){
     S.forEach((s,i)=>{
       const grip=P.dipbar?26:P.cbar?(P.seat?40:12):P.pullbar?36:P.bench?37:P.plate?32:28,flare=P.bench?-6:P.pullbar?0:P.toe?5:3;
       const shP=V(P.shoulder.x,P.shoulder.y,s*28),hd=V(P.hand.x,P.hand.y,s*grip);
-      const ar=P.elbow?{mid:P.elbow,end:P.hand}:ik(P.shoulder,P.hand,UA,FA,P.armDir);
-      const el=V(ar.mid.x,ar.mid.y,s*(28+(grip-28)*.5+flare)),wr=V(ar.end.x,ar.end.y,s*grip);
+      let el,wr;
+      if(P.lateral){const th=(8+80*P.lat)*Math.PI/180;
+        el=shP.clone().add(V(.03*UA,-UA*Math.cos(th),s*UA*Math.sin(th)));wr=el.clone().add(V(.18*FA,-FA*Math.cos(th*.95),s*FA*Math.sin(th*.95)));}
+      else{const ar=P.elbow?{mid:P.elbow,end:P.hand}:ik(P.shoulder,P.hand,UA,FA,P.armDir);
+        el=V(ar.mid.x,ar.mid.y,s*(28+(grip-28)*.5+flare));wr=V(ar.end.x,ar.end.y,s*grip);}
       J.arms[i]={sh:shP.clone(),el:el.clone(),wr:wr.clone()};
       place(uarmS[i],shP,el);place(farmS[i],el,wr);elbS[i].position.copy(el);handS[i].position.copy(wr);
       deltS[i].position.copy(shP);
       bicS[i].position.copy(shP.clone().lerp(el,.45)).add(V(0,0,0));bicS[i].quaternion.setFromUnitVectors(Y,new T.Vector3().subVectors(el,shP).normalize());
+      dbs[i].visible=!!P.lateral;if(P.lateral)dbs[i].position.copy(wr);
       if(i===1&&P.plate){bar.visible=true;bar.position.set(wr.x,wr.y,0);}
       if(i===1&&!P.plate)bar.visible=false;
       if(i===1){const hm=V(wr.x,wr.y,0);cbarM.visible=!!P.cbar;if(P.cbar)cbarM.position.copy(hm);
         cableM.visible=!!P.cable;if(P.cable)place(cableM,V(P.cable.x,P.cable.y,0),hm);}
     });
+    plat.visible=!!P.legpress;if(P.legpress){plat.position.set(P.foot.x+.7071*7,P.foot.y+.7071*7,0);plat.rotation.z=45*Math.PI/180}
     glow(p);
     return J;
   }
