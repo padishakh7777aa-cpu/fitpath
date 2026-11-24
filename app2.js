@@ -16,7 +16,7 @@ function planScreen(){
   <div class="card"><div class="row sb"><span class="tag">${LEVELS[P.lvl].name}</span><span class="hint">${P.freq} дн/нед · ${P.weeks} нед</span></div>
    <h1 style="margin:8px 0 2px">${P.name}</h1><div class="hint" style="color:var(--accent)">${P.tag}</div>
    <p>${P.desc}</p><p class="hint"><b>Для кого:</b> ${P.who}</p>
-   <button class="btn ghost small" id="pickprog">🔁 Сменить программу</button></div>
+   <button class="btn ghost small" id="pickprog">🔁 Сменить</button> <button class="btn ghost small" id="findprog">🎯 Подобрать</button></div>
   ${S.sess?`<div class="card" style="border-color:var(--accent)"><b>Идёт тренировка</b><div class="hint">${progById(S.sess.pid).days[S.sess.di].n}</div><button class="btn small" id="resume" style="margin-top:8px">▶ Продолжить</button></div>`:''}
   ${P.days.map((d,di)=>`<div class="card"><div class="row sb"><b>${d.n}</b><span class="tag warn">${d.focus}</span></div>
    <table>${d.ex.map(e=>`<tr><td>${hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">▶ ${exName(e.id)}</a>`:exName(e.id)}${e.note?`<div class="hint">${e.note}</div>`:''}</td>
@@ -36,6 +36,7 @@ function progLibrary(){
 function bindPlan(){
   document.querySelectorAll('[data-ex]').forEach(a=>a.onclick=e=>{e.preventDefault();hap();S.ex=a.dataset.ex;render()});
   const pp=$('#pickprog');if(pp)pp.onclick=()=>{S.progPick=true;render()};
+  const fp=$('#findprog');if(fp)fp.onclick=()=>{S.screen='onb';render()};
   const cl=$('#closelib');if(cl)cl.onclick=()=>{S.progPick=false;render()};
   document.querySelectorAll('[data-pick]').forEach(c=>c.onclick=()=>{S.prog=c.dataset.pick;store.set('prog',S.prog);S.progPick=false;hap('medium');toast('Программа выбрана');render()});
   document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>{hap('medium');startSession(curProg().id,+b.dataset.start)});
@@ -103,7 +104,7 @@ function summaryScreen(){
   return `<div class="hero"><div class="q">Lightweight, baby!</div><div class="tr">${s.name} выполнена</div></div>
   <div class="stats"><div><b>${s.sets}</b><span>подходов</span></div><div><b>${(s.tonnage/1000).toFixed(1)} т</b><span>тоннаж</span></div><div><b>${s.mins}'</b><span>минут</span></div></div>
   ${s.sug.length?`<h2>В следующий раз</h2><div class="card"><ul>${s.sug.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:'<div class="card hint">Закрой верх диапазона повторов во всех подходах — и приложение подскажет, когда повышать вес.</div>'}
-  <button class="btn" id="sumok">Готово</button>`;
+  <button class="btn" id="share">📤 Поделиться</button><button class="btn ghost" id="sumok" style="margin-top:8px">Готово</button>`;
 }
 
 /* ---------- Таймер отдыха ---------- */
@@ -262,4 +263,47 @@ function bindProg(){
   const s=$('#bw_save');if(s)s.onclick=()=>{const v=parseFloat($('#bw_in').value);if(!(v>20&&v<400)){toast('Введи вес в кг');return}
     const bw=S.bw||(S.bw=store.get('bw',{}));bw[today()]=v;store.set('bw',bw);hap('medium');toast('Записано');render()};
   const e=$('#pg_ex');if(e)e.onchange=()=>{S.progEx=e.value;render()};
+}
+
+function shareSummary(){
+  const s=S.summary,txt=`💪 ${s.name}: ${s.sets} подходов, ${(s.tonnage/1000).toFixed(1)} т тоннажа за ${s.mins} мин. Lightweight, baby! Тренируюсь в LIGHTWEIGHT.`;
+  const url='https://t.me/share/url?url='+encodeURIComponent(location.href.split('#')[0].split('?')[0])+'&text='+encodeURIComponent(txt);
+  try{if(tg&&tg.openTelegramLink){tg.openTelegramLink(url);return}}catch(e){}
+  window.open(url,'_blank');
+}
+
+/* ---------- Подбор программы ---------- */
+const GOALS=[['mass','💪 Набрать массу'],['strength','🏋️ Стать сильнее'],['cut','🔥 Похудеть и подтянуться']];
+function recommend(goal,days,lvl){
+  const strength=['a-pb5','p-peak','p-dup','b-full3','p-heavy'],mass=['a-ppl6','a-arnold','a-ul4','b-ul4','p-heavy','p-spec','p-hit'],cut=['a-ul4','b-full3','b-ul4','a-ppl6','p-dup'];
+  const pref={mass,strength,cut}[goal]||mass;
+  return PROGS.map(p=>{
+    let sc=0;const order=['beginner','advanced','pro'];
+    sc+=p.lvl===lvl?50:Math.abs(order.indexOf(p.lvl)-order.indexOf(lvl))===1?10:-40;
+    sc-=Math.abs(p.freq-days)*12;if(p.freq>days)sc-=25;
+    const i=pref.indexOf(p.id);sc+=i>=0?20-i*3:0;
+    return {p,sc};
+  }).sort((x,y)=>y.sc-x.sc).slice(0,3).map(x=>x.p);
+}
+function onbScreen(){
+  const o=S.onb||(S.onb={goal:'mass',days:4});
+  return `<div class="hero"><div class="q">Давай подберём программу</div><div class="tr">Два вопроса — и я предложу лучшие варианты</div></div>
+  <div class="card"><b>Какая у тебя цель?</b><div class="seg" id="ob_goal" style="flex-direction:column;margin-top:8px">${GOALS.map(([v,t])=>`<button data-v="${v}" class="${o.goal===v?'on':''}" style="padding:12px">${t}</button>`).join('')}</div>
+  <b style="display:block;margin-top:14px">Сколько дней в неделю можешь тренироваться?</b><div class="seg" id="ob_days" style="margin-top:8px">${[3,4,5,6].map(d=>`<button data-v="${d}" class="${o.days===d?'on':''}">${d}</button>`).join('')}</div></div>
+  <button class="btn" id="ob_go">Подобрать программу</button><button class="btn ghost" id="ob_skip" style="margin-top:8px">Пропустить</button>
+  <div id="ob_out"></div>`;
+}
+function bindOnb(){
+  const o=S.onb||(S.onb={goal:'mass',days:4});
+  document.querySelectorAll('#ob_goal button').forEach(b=>b.onclick=()=>{o.goal=b.dataset.v;document.querySelectorAll('#ob_goal button').forEach(x=>x.classList.toggle('on',x===b));hap()});
+  document.querySelectorAll('#ob_days button').forEach(b=>b.onclick=()=>{o.days=+b.dataset.v;document.querySelectorAll('#ob_days button').forEach(x=>x.classList.toggle('on',x===b));hap()});
+  $('#ob_skip').onclick=()=>{store.set('onb',true);S.screen=null;render()};
+  $('#ob_go').onclick=()=>{
+    const rec=recommend(o.goal,o.days,S.level);hap('medium');
+    $('#ob_out').innerHTML=`<h2>Подходит тебе</h2>`+rec.map((p,i)=>`<div class="card click" data-pick2="${p.id}" ${i===0?'style="border-color:var(--accent)"':''}>
+     <div class="row sb"><b>${p.name}</b>${i===0?'<span class="tag ok">лучший выбор</span>':''}</div><div class="hint" style="color:var(--accent)">${p.tag}</div>
+     <div class="hint">${p.freq} дн/нед · ${p.weeks} нед · ${LEVELS[p.lvl].name}</div></div>`).join('');
+    document.querySelectorAll('[data-pick2]').forEach(c=>c.onclick=()=>{S.prog=c.dataset.pick2;store.set('prog',S.prog);store.set('onb',true);S.screen=null;S.tab='plan';hap('medium');toast('Программа выбрана');render()});
+    $('#ob_out').scrollIntoView({behavior:'smooth'});
+  };
 }

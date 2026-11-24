@@ -2,7 +2,32 @@ const tg=window.Telegram&&window.Telegram.WebApp;
 if(tg){try{tg.ready();tg.expand();tg.setHeaderColor&&tg.setHeaderColor('#09090b');tg.setBackgroundColor&&tg.setBackgroundColor('#09090b');}catch(e){}}
 const hap=t=>{try{tg&&tg.HapticFeedback&&tg.HapticFeedback.impactOccurred(t||'light')}catch(e){}};
 const $=s=>document.querySelector(s);
-const store={get(k,d){try{const v=localStorage.getItem('fp_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('fp_'+k,JSON.stringify(v))}catch(e){}}};
+const cs=tg&&tg.CloudStorage&&tg.isVersionAtLeast&&tg.isVersionAtLeast('6.9')?tg.CloudStorage:null;
+const _csT={};
+function csSave(k,v){
+  if(!cs)return;clearTimeout(_csT[k]);
+  _csT[k]=setTimeout(()=>{try{const s=JSON.stringify(v),n=Math.max(1,Math.ceil(s.length/3500));
+    for(let i=0;i<n;i++)cs.setItem(`fp_${k}_${i}`,s.slice(i*3500,(i+1)*3500));cs.setItem(`fp_${k}_n`,String(n));}catch(e){}},1500);
+}
+function csLoad(k,cb){
+  try{cs.getItem(`fp_${k}_n`,(e,n)=>{n=parseInt(n);if(e||!n)return cb(null);
+    const keys=[...Array(n)].map((_,i)=>`fp_${k}_${i}`);
+    cs.getItems(keys,(e2,res)=>{if(e2)return cb(null);try{cb(JSON.parse(keys.map(x=>res[x]||'').join('')))}catch(x){cb(null)}})})}catch(e){cb(null)}
+}
+const store={get(k,d){try{const v=localStorage.getItem('fp_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('fp_'+k,JSON.stringify(v))}catch(e){}csSave(k,v)}};
+// подтягиваем данные из облака Telegram (синхронизация между устройствами)
+function cloudSync(){
+  if(!cs)return;let changed=false,pending=0;
+  const apply={log:v=>S.log=v,done:v=>S.done=v,bw:v=>S.bw=v,prof:v=>S.prof=v,prog:v=>S.prog=v,level:v=>S.level=v,onb:v=>0};
+  ['log','done','bw','prof','prog','level'].forEach(k=>{pending++;csLoad(k,cv=>{
+    if(cv!=null){const lv=store.get(k,null);
+      const big=['log','done','bw'].includes(k);
+      const richer=big?(JSON.stringify(cv).length>JSON.stringify(lv||{}).length):(lv==null);
+      if(richer){try{localStorage.setItem('fp_'+k,JSON.stringify(cv))}catch(e){};apply[k](cv);changed=true}
+      else csSave(k,lv);
+    }else{const lv=store.get(k,null);if(lv!=null)csSave(k,lv)}
+    if(--pending===0&&changed&&!S.sess&&!S.ex)render();})});
+}
 const today=()=>new Date().toISOString().slice(0,10);
 const S={level:store.get('level',null),tab:'plan',ex:null,prof:store.get('prof',{sex:'m',age:25,w:75,h:178,act:1.55,goal:'mass'}),age18:false,done:store.get('done',{}),log:store.get('log',{}),view:35,prog:store.get('prog',null),sess:store.get('sess',null),screen:null,more:'tools'};
 let activePlayer=null;
@@ -30,8 +55,9 @@ function render(){
   window.scrollTo(0,0);
   if(!S.level){v.innerHTML=levelScreen();bindLevel();return}
   if(S.ex){v.innerHTML=exScreen(S.ex);bindEx(S.ex);return}
+  if(S.screen==='onb'){v.innerHTML=onbScreen();bindOnb();return}
   if(S.screen==='session'&&S.sess){v.innerHTML=sessionScreen();bindSession();return}
-  if(S.screen==='summary'&&S.summary){v.innerHTML=summaryScreen();$('#sumok').onclick=()=>{S.screen=null;S.summary=null;render()};return}
+  if(S.screen==='summary'&&S.summary){v.innerHTML=summaryScreen();$('#sumok').onclick=()=>{S.screen=null;S.summary=null;render()};$('#share').onclick=()=>shareSummary();return}
   const map={plan:planScreen,tech:techScreen,mech:mechScreen,bio:bioScreen,food:foodScreen,more:moreScreen};
   v.innerHTML=map[S.tab]()+`<div class="disc">Неофициальное приложение в духе легенды бодибилдинга. Не связано с Ронни Коулманом.</div>`;
   ({plan:bindPlan,tech:bindTech,mech:()=>{},bio:bindBio,food:bindFood,more:bindMore})[S.tab]();
@@ -45,7 +71,7 @@ function levelScreen(){
   Object.values(LEVELS).map(l=>`<div class="card click lvl" data-l="${l.id}"><div class="ico">${l.ico}</div><div><b>${l.name}</b> <span class="tag">${l.tag}</span><div class="hint">${l.desc}</div></div></div>`).join('');
 }
 function bindLevel(){
-  document.querySelectorAll('[data-l]').forEach(c=>c.onclick=()=>{hap('medium');S.level=c.dataset.l;store.set('level',S.level);S.prog=null;store.set('prog',null);S.tab='plan';render()});
+  document.querySelectorAll('[data-l]').forEach(c=>c.onclick=()=>{hap('medium');S.level=c.dataset.l;store.set('level',S.level);S.prog=null;store.set('prog',null);S.tab='plan';S.screen=store.get('onb',false)?null:'onb';render()});
 }
 
 function weekCount(){const now=Date.now();return Object.keys(S.done).filter(d=>now-new Date(d).getTime()<7*864e5).length}
@@ -239,5 +265,5 @@ function healthScreen(){
 }
 function bindHealth(){const b=$('#age');if(b)b.onclick=()=>{S.age18=true;render()}}
 
-render();
+render();cloudSync();
 setTimeout(()=>{const s=$('#splash');if(s){s.classList.add('off');setTimeout(()=>s.remove(),500)}},1300);
