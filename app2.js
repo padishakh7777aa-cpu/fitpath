@@ -35,11 +35,12 @@ function planScreen(){
    <h1 style="margin:8px 0 2px">${P.name}</h1><div class="hint" style="color:var(--accent)">${P.tag}</div>
    <p>${P.desc}</p><p class="hint"><b>Для кого:</b> ${P.who}</p>
    <button class="btn ghost small" id="pickprog">🔁 Сменить</button> <button class="btn ghost small" id="findprog">🎯 Подобрать</button></div>
-  ${S.sess?`<div class="card" style="border-color:var(--accent)"><b>Идёт тренировка</b><div class="hint">${progById(S.sess.pid).days[S.sess.di].n}</div><button class="btn small" id="resume" style="margin-top:8px">▶ Продолжить</button></div>`:''}
+  ${S.sess?`<div class="card" style="border-color:var(--accent)"><b>Идёт тренировка</b><div class="hint">${sessDay(S.sess).n}</div><button class="btn small" id="resume" style="margin-top:8px">▶ Продолжить</button></div>`:''}
   ${P.days.map((d,di)=>`<div class="card" ${di===nd&&!doneToday?'style="border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset"':''}><div class="row sb"><b>${di===nd&&!doneToday?'⭐ Сегодня: ':''}${d.n}</b><span class="tag warn">${d.focus}</span></div>
    <table>${d.ex.map(e=>`<tr><td>${hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">▶ ${exName(e.id)}</a>`:exName(e.id)}${e.note?`<div class="hint">${e.note}</div>`:''}</td>
    <td style="white-space:nowrap;text-align:right"><b>${e.s}×${e.r}</b><div class="hint">RIR ${e.rir} · ${fmtRest(e.rest)}</div></td></tr>`).join('')}</table>
    <button class="btn" data-start="${di}" style="margin-top:10px">▶ Начать тренировку</button></div>`).join('')}
+  <button class="btn ghost" id="freesess">➕ Свободная тренировка (без программы)</button>
   <h2>Прогрессия</h2><div class="card">${P.prog}</div>
   <h2>Разгрузка</h2><div class="card">${P.deload}</div>
   <h2>Важно</h2><div class="card"><ul>${P.notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>`;
@@ -54,6 +55,7 @@ function progLibrary(){
 function bindPlan(){
   document.querySelectorAll('[data-ex]').forEach(a=>a.onclick=e=>{e.preventDefault();hap();S.ex=a.dataset.ex;render()});
   const pp=$('#pickprog');if(pp)pp.onclick=()=>{S.progPick=true;render()};
+  const fs=$('#freesess');if(fs)fs.onclick=()=>{hap('medium');startFree()};
   const fp=$('#findprog');if(fp)fp.onclick=()=>{S.screen='onb';render()};
   const cl=$('#closelib');if(cl)cl.onclick=()=>{S.progPick=false;render()};
   document.querySelectorAll('[data-pick]').forEach(c=>c.onclick=()=>{S.prog=c.dataset.pick;store.set('prog',S.prog);store.set('pstart',{id:S.prog,ts:Date.now()});S.progPick=false;hap('medium');toast('Программа выбрана');render()});
@@ -62,16 +64,20 @@ function bindPlan(){
 }
 
 /* ---------- Режим тренировки ---------- */
+const sessDay=ss=>ss.day||progById(ss.pid).days[ss.di];
+function startFree(){S.sess={pid:'free',di:0,day:{n:'Свободная тренировка',focus:'',ex:[]},start:Date.now(),sets:{},free:true};store.set('sess',S.sess);S.screen='session';render()}
 function startSession(pid,di){S.sess={pid,di,start:Date.now(),sets:{}};store.set('sess',S.sess);S.screen='session';render()}
 function topReps(r){const n=String(r).replace(/–/g,'-').match(/\d+/g);if(!n||/отказ|блок/.test(r))return null;return Math.max(...n.map(Number))}
 function sessionScreen(){
-  const ss=S.sess,P=progById(ss.pid),D=P.days[ss.di];
+  const ss=S.sess,D=sessDay(ss),P={name:ss.free?'Свободная тренировка':progById(ss.pid).name,id:ss.pid};
   return `<button class="back" id="sback">‹ К программе</button><h1>${D.n}</h1><div class="hint">${P.name} · <span id="elapsed">0:00</span></div>
-  ${weekInfo(P).isDL?'<div class="warnbox"><b>Неделя разгрузки</b>: 2 подхода на упражнение, вес −10%, запас повторов 3–4.</div>':''}
-  ${warmupHtml(D)}
+  ${ss.free?freeAddHtml():''}
+  ${(!ss.free&&weekInfo(P).isDL)?'<div class="warnbox"><b>Неделя разгрузки</b>: 2 подхода на упражнение, вес −10%, запас повторов 3–4.</div>':''}
+  ${D.ex.length?warmupHtml(D):''}
   ${D.ex.map((e,ei)=>{const k=exKey(e.id),lw=lastW(k);
    return `<div class="card"><div class="row sb"><b>${hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">▶ ${exName(e.id)}</a>`:exName(e.id)}</b><span class="tag">RIR ${e.rir}</span></div>
    <div class="hint">${e.s}×${e.r} · отдых ${fmtRest(e.rest)}${lw?` · прошлый вес ${lw} кг`:''}</div>${e.note?`<div class="hint">${e.note}</div>`:''}
+   ${ss.free?`<button class="btn ghost small" data-addset="${ei}" style="margin-top:6px">+ подход</button> <button class="btn ghost small" data-delex="${ei}" style="margin-top:6px">✕ убрать</button>`:''}
    ${Array.from({length:e.s},(_,si)=>{const id=ei+'_'+si,d=ss.sets[id]||{};
     return `<div class="logrow set ${d.done?'ok':''}" data-id="${id}" data-ei="${ei}"><span class="hint" style="width:20px;align-self:center">${si+1}</span>
      <input type="number" inputmode="decimal" placeholder="${lw||'кг'}" value="${d.w??''}" ${d.done?'disabled':''}>
@@ -80,7 +86,7 @@ function sessionScreen(){
   <button class="btn" id="finish">🏁 Завершить тренировку</button><button class="btn ghost" id="cancelsess" style="margin-top:8px">Отменить</button>`;
 }
 function bindSession(){
-  const ss=S.sess,P=progById(ss.pid),D=P.days[ss.di];
+  const ss=S.sess,D=sessDay(ss),P={name:ss.free?'Свободная тренировка':progById(ss.pid).name,id:ss.pid};
   const upd=()=>{const e=$('#elapsed');if(!e)return;const s=Math.floor((Date.now()-ss.start)/1000);e.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
   upd();S._tick=setInterval(upd,1000);
   $('#sback').onclick=()=>{S.screen=null;render()};
@@ -98,12 +104,17 @@ function bindSession(){
       startRest(e.rest);
     };
   });
+  const fa=$('#fx_add');if(fa)fa.onclick=()=>{
+    const sel=$('#fx_sel').value,own=$('#fx_name').value.trim(),id=own?'text:'+own:sel;if(!id){toast('Выбери упражнение');return}
+    ss.day.ex.push({id,s:3,r:'8–12',rir:2,rest:90,note:''});store.set('sess',ss);hap('medium');render()};
+  document.querySelectorAll('[data-addset]').forEach(x=>x.onclick=()=>{ss.day.ex[+x.dataset.addset].s++;store.set('sess',ss);render()});
+  document.querySelectorAll('[data-delex]').forEach(x=>x.onclick=()=>{const i=+x.dataset.delex;ss.day.ex.splice(i,1);const ns={};Object.keys(ss.sets).forEach(k=>{const [a,c]=k.split('_').map(Number);if(a<i)ns[k]=ss.sets[k];else if(a>i)ns[(a-1)+'_'+c]=ss.sets[k]});ss.sets=ns;store.set('sess',ss);render()});
   $('#finish').onclick=()=>finishSession();
   $('#cancelsess').onclick=()=>{if(confirm('Отменить тренировку? Данные не сохранятся.')){clearSess();S.screen=null;render()}};
 }
 function clearSess(){S.sess=null;store.set('sess',null);if(S._tick)clearInterval(S._tick);stopRest()}
 function finishSession(){
-  const ss=S.sess,P=progById(ss.pid),D=P.days[ss.di];let tonnage=0,sets=0;const sug=[];
+  const ss=S.sess,D=sessDay(ss),P={name:ss.free?'Свободная тренировка':progById(ss.pid).name,id:ss.pid};let tonnage=0,sets=0;const sug=[];
   D.ex.forEach((e,ei)=>{
     const done=[];for(let si=0;si<e.s;si++){const d=ss.sets[ei+'_'+si];if(d&&d.done)done.push(d)}
     if(!done.length)return;sets+=done.length;
@@ -122,7 +133,7 @@ function finishSession(){
 function summaryScreen(){
   const s=S.summary;
   return `<div class="hero"><div class="q">Lightweight, baby!</div><div class="tr">${s.name} выполнена</div></div>
-  <div class="stats"><div><b>${s.sets}</b><span>подходов</span></div><div><b>${(s.tonnage/1000).toFixed(1)} т</b><span>тоннаж</span></div><div><b>${s.mins}'</b><span>минут</span></div></div>
+  <div class="stats"><div><b>${s.sets}</b><span>${plural(s.sets,['подход','подхода','подходов'])}</span></div><div><b>${(s.tonnage/1000).toFixed(1)} т</b><span>тоннаж</span></div><div><b>${s.mins}'</b><span>минут</span></div></div>
   ${s.sug.length?`<h2>В следующий раз</h2><div class="card"><ul>${s.sug.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:'<div class="card hint">Закрой верх диапазона повторов во всех подходах — и приложение подскажет, когда повышать вес.</div>'}
   <button class="btn" id="share">📤 Поделиться</button><button class="btn ghost" id="sumok" style="margin-top:8px">Готово</button>`;
 }
@@ -285,8 +296,9 @@ function bindProg(){
   const e=$('#pg_ex');if(e)e.onchange=()=>{S.progEx=e.value;render()};
 }
 
+const plural=(n,f)=>{n=Math.abs(n)%100;const m=n%10;return n>10&&n<20?f[2]:m===1?f[0]:m>=2&&m<=4?f[1]:f[2]};
 function shareSummary(){
-  const s=S.summary,txt=`💪 ${s.name}: ${s.sets} подходов, ${(s.tonnage/1000).toFixed(1)} т тоннажа за ${s.mins} мин. Lightweight, baby! Тренируюсь в LIGHTWEIGHT.`;
+  const s=S.summary,txt=`💪 ${s.name}: ${s.sets} ${plural(s.sets,['подход','подхода','подходов'])}, ${(s.tonnage/1000).toFixed(1)} т тоннажа за ${s.mins} мин. Lightweight, baby! Тренируюсь в LIGHTWEIGHT.`;
   const url='https://t.me/share/url?url='+encodeURIComponent(location.href.split('#')[0].split('?')[0])+'&text='+encodeURIComponent(txt);
   try{if(tg&&tg.openTelegramLink){tg.openTelegramLink(url);return}}catch(e){}
   window.open(url,'_blank');
@@ -333,4 +345,11 @@ function warmupHtml(D){
   const r5=x=>Math.max(0,Math.round(x/2.5)*2.5);
   const rows=w>0?[[0.4,8],[0.6,5],[0.8,3]].map(([f,r])=>`<tr><td>${r5(w*f)} кг</td><td>× ${r}</td></tr>`).join(''):'<tr><td colspan="2" class="hint">Запиши первый подход, и я посчитаю разминку по твоему рабочему весу.</td></tr>';
   return `<details class="card"><summary>🔥 Разминка перед «${exName(e.id)}»</summary><div class="hint" style="margin:6px 0">5–7 минут кардио и мобильность, затем подводящие подходы с отдыхом 60 сек:</div><table>${rows}</table></details>`;
+}
+
+function freeAddHtml(){
+  return `<div class="card"><b>➕ Добавить упражнение</b>
+   <select id="fx_sel" style="margin-top:8px"><option value="">— выбери из списка —</option>${Object.keys(EX).map(k=>`<option value="${k}">${EX[k].name}</option>`).join('')}</select>
+   <input id="fx_name" placeholder="…или впиши своё название" style="margin-top:8px">
+   <button class="btn" id="fx_add" style="margin-top:8px">Добавить</button></div>`;
 }
