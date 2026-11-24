@@ -112,7 +112,7 @@ function bindEx(k){
   };
   if(has3D()&&typeof mxHas==='function'&&mxHas(k)){
     const ld=document.createElement('div');ld.className='hintdrag';ld.style.top='45%';ld.style.fontSize='13px';ld.textContent='Загружаю модель…';wrap.appendChild(ld);
-    playerMx(wrap,k,{period}).then(p=>{ld.remove();if(S.ex!==k){p.stop();return}pl=p;pl.setView(35);wire();}).catch(err=>{ld.remove();console.warn('mx fail',err);fallback()});
+    playerMx(wrap,k,{period,mus:MUS[k]}).then(p=>{ld.remove();if(S.ex!==k){p.stop();return}pl=p;pl.setView(35);wire();}).catch(err=>{ld.remove();console.warn('mx fail',err);fallback()});
   }else fallback();
   document.querySelectorAll('#views button').forEach(b=>b.onclick=()=>{hap();
     document.querySelectorAll('#views button').forEach(x=>x.classList.remove('on'));b.classList.add('on');

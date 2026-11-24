@@ -1,7 +1,7 @@
 // Реалистичный персонаж (Mixamo) в одном GLB с запечёнными анимациями.
 // Чтобы добавить упражнения: скачай анимацию из Mixamo (FBX, Without Skin) и запиши в models/manifest.json.
 const MX={enabled:false,character:'models/character.glb',clips:{},scale:1};
-function mxHas(key){return !!(MX.enabled&&window.THREE&&THREE.GLTFLoader&&MX.clips[key])}
+function mxHas(key){return !!(MX.enabled&&window.THREE&&THREE.GLTFLoader&&THREE.SkeletonUtils)}
 let _mxG=null;
 function mxLoad(){
   if(!_mxG)_mxG=new Promise((res,rej)=>new THREE.GLTFLoader().load(MX.character,res,undefined,rej));
@@ -10,6 +10,7 @@ function mxLoad(){
 (async()=>{try{const r=await fetch('models/manifest.json');if(!r.ok)return;const m=await r.json();
   (m.animations||[]).forEach(k=>MX.clips[k]=true);MX.enabled=Object.keys(MX.clips).length>0;}catch(e){}})();
 async function playerMx(wrap,key,opts={}){
+  if(!MX.clips[key])return playerMxProc(wrap,key,opts);
   const gltf=await mxLoad(),root=gltf.scene,clip0=gltf.animations.find(a=>a.name===key);
   if(!clip0)throw new Error('no clip '+key);
   const T=THREE;
@@ -71,4 +72,69 @@ async function playerMx(wrap,key,opts={}){
   mixer.setTime(0);st.raf=requestAnimationFrame(loop);
   st.stop=()=>{cancelAnimationFrame(st.raf);holder.remove();mixer.stopAllAction();renderer.dispose();try{renderer.forceContextLoss()}catch(e){}cv.remove()};
   return st;
+}
+
+// ---- Процедурная анимация скелета Mixamo по расчётным позам (для упражнений без готового клипа) ----
+function _ik3(A,B,l1,l2,pole){
+  const T=THREE,d=new T.Vector3().subVectors(B,A);let dist=d.length();const u=d.clone().normalize();
+  dist=Math.min(dist,l1+l2-0.01);dist=Math.max(dist,Math.abs(l1-l2)+0.01);
+  const a=(l1*l1-l2*l2+dist*dist)/(2*dist),h=Math.sqrt(Math.max(0,l1*l1-a*a));
+  let pv=pole.clone();pv.addScaledVector(u,-pv.dot(u));if(pv.lengthSq()<1e-6)pv.set(1,0,0).addScaledVector(u,-u.x);pv.normalize();
+  const mid=A.clone().addScaledVector(u,a).addScaledVector(pv,h),end=A.clone().addScaledVector(u,dist);
+  return {mid,end};
+}
+async function mxRig(){
+  const T=THREE,gltf=await mxLoad(),root=T.SkeletonUtils.clone(gltf.scene);
+  const holder=new T.Group();holder.rotation.y=Math.PI/2;holder.add(root);
+  root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{m.color.setRGB(2.4,2.4,2.6);m.roughness=.5;if(m.emissive)m.emissiveIntensity=0;m.emissiveMap=null;m.needsUpdate=true})}});
+  const bones={};root.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig:?/,'')]=o});
+  const wp=b=>b.getWorldPosition(new T.Vector3());
+  holder.updateMatrixWorld(true);
+  const Lv0=wp(bones.LeftUpLeg).y-wp(bones.LeftFoot).y;
+  holder.scale.setScalar(81.5/Lv0);holder.updateMatrixWorld(true);
+  const minY=new T.Box3().setFromObject(root).min.y,ankleH=wp(bones.LeftFoot).y-minY;
+  const chain={Hips:'Spine',Spine:'Spine1',Spine1:'Spine2',Spine2:'Neck',Neck:'Head',Head:'HeadTop_End',
+    LeftUpLeg:'LeftLeg',LeftLeg:'LeftFoot',LeftFoot:'LeftToeBase',RightUpLeg:'RightLeg',RightLeg:'RightFoot',RightFoot:'RightToeBase',
+    LeftArm:'LeftForeArm',LeftForeArm:'LeftHand',RightArm:'RightForeArm',RightForeArm:'RightHand'};
+  const rest={};
+  for(const n in chain){const b=bones[n],c=bones[chain[n]];if(!b||!c)continue;
+    const wq=b.getWorldQuaternion(new T.Quaternion());
+    rest[n]={lq:b.quaternion.clone(),dirLocal:wp(c).sub(wp(b)).normalize().applyQuaternion(wq.clone().invert()),len:wp(c).distanceTo(wp(b))};}
+  const hipsOff=wp(bones.Hips).sub(wp(bones.LeftUpLeg).add(wp(bones.RightUpLeg)).multiplyScalar(.5));
+  function align(n,dir){
+    const b=bones[n],r=rest[n];if(!b||!r)return;
+    b.parent.updateWorldMatrix(true,false);
+    const pq=b.parent.getWorldQuaternion(new T.Quaternion()),base=pq.clone().multiply(r.lq);
+    const cur=r.dirLocal.clone().applyQuaternion(base);
+    const nw=new T.Quaternion().setFromUnitVectors(cur,dir.clone().normalize()).multiply(base);
+    b.quaternion.copy(pq.invert().multiply(nw));b.updateMatrixWorld(true);
+  }
+  function apply(J){
+    const hips=bones.Hips;hips.parent.updateWorldMatrix(true,false);
+    hips.position.copy(hips.parent.worldToLocal(J.hipC.clone().add(hipsOff)));hips.updateMatrixWorld(true);
+    const u=new T.Vector3().subVectors(J.shC,J.hipC).normalize();
+    ['Hips','Spine','Spine1','Spine2','Neck','Head'].forEach(n=>align(n,u));
+    ['Left','Right'].forEach((side,i)=>{
+      const lg=J.legs[i],A=wp(bones[side+'UpLeg']),B=lg.ankle.clone();B.y+=ankleH;
+      const pole=lg.knee.clone().sub(lg.hip.clone().add(lg.ankle).multiplyScalar(.5));
+      const r=_ik3(A,B,rest[side+'UpLeg'].len,rest[side+'Leg'].len,pole);
+      align(side+'UpLeg',r.mid.clone().sub(A));align(side+'Leg',r.end.clone().sub(r.mid));
+      align(side+'Foot',lg.toe.clone().sub(lg.ankle));
+      const ar=J.arms[i],S=wp(bones[side+'Arm']);
+      const pole2=ar.el.clone().sub(ar.sh.clone().add(ar.wr).multiplyScalar(.5));
+      const r2=_ik3(S,ar.wr,rest[side+'Arm'].len,rest[side+'ForeArm'].len,pole2);
+      align(side+'Arm',r2.mid.clone().sub(S));align(side+'ForeArm',r2.end.clone().sub(r2.mid));
+    });
+  }
+  return {holder,apply};
+}
+async function playerMxProc(wrap,key,opts={}){
+  const rig=await mxRig(),T=THREE;
+  const pl=player3d(wrap,key,{mus:opts.mus,period:opts.period,bodyless:true,
+    setup:scene=>{scene.add(rig.holder);
+      const k1=new T.DirectionalLight(0xffffff,1.6);k1.position.set(120,180,320);scene.add(k1);
+      const f=new T.DirectionalLight(0x9fb4ff,.9);f.position.set(-200,120,200);scene.add(f);},
+    onPose:J=>rig.apply(J)});
+  const stop=pl.stop;pl.stop=()=>{rig.holder.removeFromParent();stop()};
+  return pl;
 }

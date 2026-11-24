@@ -85,6 +85,7 @@ function Athlete3D(key,opts={}){
   function pose(p){
     const P=POSES[key](p);buildProps(P);
     const sP=V(P.shoulder.x,P.shoulder.y,0),hP=V(P.hip.x,P.hip.y,0);
+    const J={legs:[],arms:[],hipC:hP.clone(),shC:sP.clone(),P};
     const u=new T.Vector3().subVectors(sP,hP).normalize();
     const ang=Math.atan2(-u.x,u.y),q=new T.Quaternion().setFromAxisAngle(Zax,ang);
     const loc=(f,h,z)=>V(hP.x,hP.y,0).add(new T.Vector3(f,h,0).applyQuaternion(q)).setZ(z); // точка в системе корпуса
@@ -118,6 +119,7 @@ function Athlete3D(key,opts={}){
       const a=((P.footAng||0)*Math.PI/180),L=P.toe?9:17;
       const ang2=P.toe?-.28:-a;
       const toeV=V(an.x+Math.cos(ang2)*L,an.y+Math.sin(ang2)*L,an.z),heel=V(an.x-4,an.y-3,an.z);
+      J.legs[i]={hip:hipP.clone(),knee:kn.clone(),ankle:an.clone(),toe:toeV.clone()};
       place(footS[i],heel,toeV);toeS[i].position.copy(toeV);
       place(soleS[i],heel.clone().add(V(0,-3.2,0)),toeV.clone().add(V(0,-3.2,0)));
       soleS[i].scale.x=soleS[i].scale.z=1;
@@ -128,6 +130,7 @@ function Athlete3D(key,opts={}){
       const shP=V(P.shoulder.x,P.shoulder.y,s*28),hd=V(P.hand.x,P.hand.y,s*grip);
       const ar=P.elbow?{mid:P.elbow,end:P.hand}:ik(P.shoulder,P.hand,UA,FA,P.armDir);
       const el=V(ar.mid.x,ar.mid.y,s*(28+(grip-28)*.5+flare)),wr=V(ar.end.x,ar.end.y,s*grip);
+      J.arms[i]={sh:shP.clone(),el:el.clone(),wr:wr.clone()};
       place(uarmS[i],shP,el);place(farmS[i],el,wr);elbS[i].position.copy(el);handS[i].position.copy(wr);
       deltS[i].position.copy(shP);
       bicS[i].position.copy(shP.clone().lerp(el,.45)).add(V(0,0,0));bicS[i].quaternion.setFromUnitVectors(Y,new T.Vector3().subVectors(el,shP).normalize());
@@ -135,7 +138,9 @@ function Athlete3D(key,opts={}){
       if(i===1&&!P.plate)bar.visible=false;
     });
     glow(p);
+    return J;
   }
+  if(opts.bodyless)group.children.forEach(c=>{if(c!==bar)c.visible=false});
   return {scene,group,pose,dispose(){scene.traverse(o=>{if(o.geometry)o.geometry.dispose()})}};
 }
 
@@ -158,7 +163,8 @@ function player3d(wrap,key,opts={}){
   const renderer=makeRenderer(w,h,false);
   const cv=renderer.domElement;cv.style.cssText='width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab';
   wrap.appendChild(cv);
-  const ath=Athlete3D(key,{mus:opts.mus});
+  const ath=Athlete3D(key,{mus:opts.mus,bodyless:opts.bodyless});
+  if(opts.setup)opts.setup(ath.scene);
   const cam=new THREE.PerspectiveCamera(32,w/h,5,3000);
   const st={speed:1,paused:false,t:0,last:performance.now(),reps:0,cyc:0,onPhase:null,onRep:null,period:opts.period||3.6,
     az:.5,azT:.5,pol:.17,spin:false,drag:false,raf:0};
@@ -171,7 +177,7 @@ function player3d(wrap,key,opts={}){
     const dt=Math.min(.05,(now-st.last)/1000);st.last=now;
     if(!st.paused){
       st.t+=dt*st.speed;const c=st.t/st.period,cyc=c-Math.floor(c),p=.5-.5*Math.cos(2*Math.PI*cyc);
-      ath.pose(p);
+      const J=ath.pose(p);if(opts.onPose)opts.onPose(J);
       const ph=cyc<.5?0:1;if(ph!==st.cyc){st.cyc=ph;st.onPhase&&st.onPhase(ph)}
       const n=Math.floor(c);if(n!==st.reps){st.reps=n;st.onRep&&st.onRep(n)}
     }
@@ -181,7 +187,7 @@ function player3d(wrap,key,opts={}){
     renderer.render(ath.scene,cam);
     st.raf=requestAnimationFrame(loop);
   }
-  ath.pose(0);st.raf=requestAnimationFrame(loop);
+  {const J0=ath.pose(0);if(opts.onPose)opts.onPose(J0);}st.raf=requestAnimationFrame(loop);
   st.stop=()=>{cancelAnimationFrame(st.raf);ath.dispose();renderer.dispose();try{renderer.forceContextLoss()}catch(e){}cv.remove()};
   return st;
 }
