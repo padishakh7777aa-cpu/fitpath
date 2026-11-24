@@ -276,5 +276,21 @@ function healthScreen(){
 }
 function bindHealth(){const b=$('#age');if(b)b.onclick=()=>{S.age18=true;render()}}
 
+// родная кнопка «Назад» Telegram
+function goBack(){
+  if(S.screen==='guide'){const x=$('#gexit');if(x)x.click();return}
+  if(S.screen==='summary'){S.screen=null;S.summary=null;render();return}
+  if(S.screen==='session'){S.screen=null;render();return}
+  if(S.ex){S.ex=null;render();return}
+  if(S.progPick){S.progPick=false;render();return}
+  if(typeof SUBTABS!=='undefined'&&SUBTABS.includes(S.tab)){S.tab='more';render();return}
+}
+function syncBack(){
+  try{if(!tg||!tg.BackButton)return;
+    const need=!!(S.level&&(S.ex||S.progPick||S.screen||(SUBTABS.includes(S.tab))));
+    need?tg.BackButton.show():tg.BackButton.hide();}catch(e){}
+}
+try{if(tg&&tg.BackButton)tg.BackButton.onClick(goBack)}catch(e){}
+(function(){const _r=render;render=function(){_r();syncBack()}})();
 render();cloudSync();
 setTimeout(()=>{const s=$('#splash');if(s){s.classList.add('off');setTimeout(()=>s.remove(),500)}},1300);

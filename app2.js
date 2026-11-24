@@ -427,6 +427,7 @@ function bindStart(){
 function moreScreen(){
   const items=[['tech','🎬','Техника упражнений','3D-показ каждого упражнения'],['food','🥗','Питание','Сколько есть и что'],['sup','💊','Спортпит','Что работает, а что нет'],['bio','🧬','Восстановление и сон','Режим дня, готовность'],['mech','🧠','Как растут мышцы','Простыми словами и подробно'],['tools','🧰','Инструменты','Калькуляторы, таймер'],['health','❤️','Здоровье','Анализы и безопасность'],['change','🔁','Сменить цель или опыт','Подобрать курс заново']];
   return `<h1>Ещё</h1>${items.map(([id,i,t,d])=>`<div class="card click row" data-go="${id}" style="gap:14px"><div style="font-size:28px">${i}</div><div><b>${t}</b><div class="hint">${d}</div></div></div>`).join('')}
+   <div class="card click row" id="invite" style="gap:14px"><div style="font-size:28px">🤝</div><div><b>Пригласить друга</b><div class="hint">Вместе тренироваться веселее</div></div></div>
    <div class="card click row" id="freeopen" style="gap:14px"><div style="font-size:28px">✍️</div><div><b>Свободная тренировка</b><div class="hint">Записать подходы самому</div></div></div>`;
 }
 function bindMore(){
@@ -434,4 +435,6 @@ function bindMore(){
     if(id==='change'){S.level=null;S.ob=null;render();return}
     S.tab=id;render()});
   const f=$('#freeopen');if(f)f.onclick=()=>{hap('medium');startFree()};
+  const iv=$('#invite');if(iv)iv.onclick=()=>{hap();const url='https://t.me/share/url?url='+encodeURIComponent(location.href.split('#')[0].split('?')[0])+'&text='+encodeURIComponent('Тренируюсь в LIGHTWEIGHT: приложение само ведёт по тренировке, подсказывает вес и отдых. Попробуй!');
+    try{if(tg&&tg.openTelegramLink){tg.openTelegramLink(url);return}}catch(e){}window.open(url,'_blank')};
 }
