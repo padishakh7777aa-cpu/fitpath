@@ -29,7 +29,7 @@ function cloudSync(){
     if(--pending===0&&changed&&!S.sess&&!S.ex)render();})});
 }
 const today=()=>new Date().toISOString().slice(0,10);
-const S={level:store.get('level',null),tab:'plan',ex:null,prof:store.get('prof',{sex:'m',age:25,w:75,h:178,act:1.55,goal:'mass'}),age18:false,done:store.get('done',{}),log:store.get('log',{}),view:35,prog:store.get('prog',null),sess:store.get('sess',null),screen:null,more:'tools'};
+const S={level:store.get('level',null),tab:'plan',ex:null,prof:store.get('prof',{sex:'m',age:25,w:75,h:178,act:1.55,goal:'mass'}),age18:false,done:store.get('done',{}),log:store.get('log',{}),view:35,prog:store.get('prog',null),sess:store.get('sess',null),g:store.get('gsess',null),screen:null,more:'tools'};
 let activePlayer=null;
 const stopPlayer=()=>{if(activePlayer){activePlayer.stop();activePlayer=null}};
 const quoteOfDay=()=>QUOTES[Math.floor(Date.now()/864e5)%QUOTES.length];
@@ -41,7 +41,7 @@ function renderNav(){
   const n=$('#nav');
   n.innerHTML=TABS.map(([id,i,l])=>`<button data-t="${id}" class="${S.tab===id&&!S.ex?'on':''}"><span class="i">${i}</span>${l}</button>`).join('');
   n.querySelectorAll('button').forEach(b=>b.onclick=()=>{hap();S.tab=b.dataset.t;S.ex=null;S.screen=null;S.progPick=false;render()});
-  n.style.display=S.level?'flex':'none';
+  n.style.display=(S.level&&S.screen!=='guide')?'flex':'none';
   const c=$('#levelChip');
   c.style.display=S.level?'block':'none';
   if(S.level)c.textContent=LEVELS[S.level].ico+' '+LEVELS[S.level].name;
@@ -49,6 +49,7 @@ function renderNav(){
 }
 
 function render(){
+  if(S.screen!=='guide'&&typeof guideCleanup==='function')guideCleanup();
   stopPlayer();if(S._tick){clearInterval(S._tick);S._tick=null}
   renderNav();
   const v=$('#view');
@@ -56,6 +57,7 @@ function render(){
   if(!S.level){v.innerHTML=levelScreen();bindLevel();return}
   if(S.ex){v.innerHTML=exScreen(S.ex);bindEx(S.ex);return}
   if(S.screen==='onb'){v.innerHTML=onbScreen();bindOnb();return}
+  if(S.screen==='guide'&&S.g){v.innerHTML=guideScreen();bindGuide();return}
   if(S.screen==='session'&&S.sess){v.innerHTML=sessionScreen();bindSession();return}
   if(S.screen==='summary'&&S.summary){v.innerHTML=summaryScreen();$('#sumok').onclick=()=>{S.screen=null;S.summary=null;render()};$('#share').onclick=()=>shareSummary();return}
   const map={plan:planScreen,tech:techScreen,mech:mechScreen,bio:bioScreen,food:foodScreen,more:moreScreen};

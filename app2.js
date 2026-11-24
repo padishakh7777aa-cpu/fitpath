@@ -29,6 +29,11 @@ function planScreen(){
   if(S.progPick)return progLibrary();
   const P=curProg(),q=quoteOfDay(),target=P.freq,total=Object.keys(S.done).length,nd=nextDayIdx(P),doneToday=!!S.done[today()];
   return `<div class="hero"><div class="q">${q[0]}</div><div class="tr">${q[1]}</div></div>
+  ${S.g?`<div class="card" style="border-color:var(--accent)"><b>Тренировка с гидом в процессе</b><div class="hint">${guideDay(S.g).n}</div><button class="btn" id="gresume" style="margin-top:8px">▶ Продолжить</button></div>`:
+   (doneToday?`<div class="card"><b>✅ Сегодня ты уже потренировался</b><div class="hint">Отдых тоже часть программы. Следующая: ${P.days[nd].n}</div></div>`:
+   `<div class="card cta"><div class="hint">Твоя тренировка на сегодня</div><h1 style="margin:2px 0 4px">${P.days[nd].n}</h1><div class="hint">${P.days[nd].focus} · ${P.days[nd].ex.length} упражнений · ~${gDur({pid:P.id,di:nd})} мин</div>
+    <button class="btn" id="gstartnow" data-gstart="${nd}" style="margin-top:10px;font-size:17px;padding:14px">▶ Начать тренировку</button>
+    <div class="hint" style="margin-top:6px">Покажу каждое упражнение, подскажу вес и отдых. Тебе — только делать.</div></div>`)}
   ${weekBanner(P)}
   <div class="stats"><div><b>${weekCount()}/${target}</b><span>за неделю</span></div><div><b>${streak()}🔥</b><span>дней подряд</span></div><div><b>${total}</b><span>всего тренировок</span></div></div>
   <div class="card"><div class="row sb"><span class="tag">${LEVELS[P.lvl].name}</span><span class="hint">${P.freq} дн/нед · ${P.weeks} нед</span></div>
@@ -39,7 +44,7 @@ function planScreen(){
   ${P.days.map((d,di)=>`<div class="card" ${di===nd&&!doneToday?'style="border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset"':''}><div class="row sb"><b>${di===nd&&!doneToday?'⭐ Сегодня: ':''}${d.n}</b><span class="tag warn">${d.focus}</span></div>
    <table>${d.ex.map(e=>`<tr><td>${hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">▶ ${exName(e.id)}</a>`:exName(e.id)}${e.note?`<div class="hint">${e.note}</div>`:''}</td>
    <td style="white-space:nowrap;text-align:right"><b>${e.s}×${e.r}</b><div class="hint">RIR ${e.rir} · ${fmtRest(e.rest)}</div></td></tr>`).join('')}</table>
-   <button class="btn" data-start="${di}" style="margin-top:10px">▶ Начать тренировку</button></div>`).join('')}
+   <button class="btn" data-gstart="${di}" style="margin-top:10px">▶ Начать с подсказками</button><button class="btn ghost small" data-start="${di}" style="margin-top:8px">Ручной ввод</button></div>`).join('')}
   <button class="btn ghost" id="freesess">➕ Свободная тренировка (без программы)</button>
   <h2>Прогрессия</h2><div class="card">${P.prog}</div>
   <h2>Разгрузка</h2><div class="card">${P.deload}</div>
@@ -55,6 +60,8 @@ function progLibrary(){
 function bindPlan(){
   document.querySelectorAll('[data-ex]').forEach(a=>a.onclick=e=>{e.preventDefault();hap();S.ex=a.dataset.ex;render()});
   const pp=$('#pickprog');if(pp)pp.onclick=()=>{S.progPick=true;render()};
+  document.querySelectorAll('[data-gstart]').forEach(x=>x.onclick=()=>{hap('medium');startGuide(curProg().id,+x.dataset.gstart)});
+  const gr=$('#gresume');if(gr)gr.onclick=()=>{S.screen='guide';render()};
   const fs=$('#freesess');if(fs)fs.onclick=()=>{hap('medium');startFree()};
   const fp=$('#findprog');if(fp)fp.onclick=()=>{S.screen='onb';render()};
   const cl=$('#closelib');if(cl)cl.onclick=()=>{S.progPick=false;render()};
