@@ -1,6 +1,6 @@
 // Реалистичный персонаж (Mixamo) в одном GLB с запечёнными анимациями.
 // Чтобы добавить упражнения: скачай анимацию из Mixamo (FBX, Without Skin) и запиши в models/manifest.json.
-const MX={enabled:false,character:'models/character.glb',clips:{},scale:1};
+const MX={enabled:false,character:'models/character.glb',clips:{},scale:1,gripSign:-1};
 function mxHas(key){return !!(MX.enabled&&window.THREE&&THREE.GLTFLoader&&THREE.SkeletonUtils)}
 let _mxG=null;
 function mxLoad(){
@@ -100,6 +100,11 @@ async function mxRig(){
   for(const n in chain){const b=bones[n],c=bones[chain[n]];if(!b||!c)continue;
     const wq=b.getWorldQuaternion(new T.Quaternion());
     rest[n]={lq:b.quaternion.clone(),dirLocal:wp(c).sub(wp(b)).normalize().applyQuaternion(wq.clone().invert()),len:wp(c).distanceTo(wp(b))};}
+  const _fr=(()=>{const a=wp(bones.LeftFoot),t=wp(bones.LeftToeBase),h=new T.Vector2(t.x-a.x,t.z-a.z).length();return {drop:a.y-t.y,hor:h}})();
+  // пальцы рук для хвата
+  const fingers=[];
+  ['Left','Right'].forEach(side=>['Thumb','Index','Middle','Ring','Pinky'].forEach(f=>[1,2,3].forEach(n=>{
+    const b=bones[side+'Hand'+f+n];if(b)fingers.push({b,lq:b.quaternion.clone(),side,f,n})})));
   const hipsOff=wp(bones.Hips).sub(wp(bones.LeftUpLeg).add(wp(bones.RightUpLeg)).multiplyScalar(.5));
   function align(n,dir){
     const b=bones[n],r=rest[n];if(!b||!r)return;
@@ -109,7 +114,31 @@ async function mxRig(){
     const nw=new T.Quaternion().setFromUnitVectors(cur,dir.clone().normalize()).multiply(base);
     b.quaternion.copy(pq.invert().multiply(nw));b.updateMatrixWorld(true);
   }
+  const PALM=6;
+  const gripOf=side=>{const hp=wp(bones[side+'Hand']),d=hp.clone().sub(wp(bones[side+'ForeArm'])).normalize();return hp.addScaledVector(d,PALM)};
+  function grip(){return gripOf('Left').add(gripOf('Right')).multiplyScalar(.5)}
+  function shifted(J,d){
+    const c=v=>v.clone().add(d);
+    return {P:J.P,hipC:c(J.hipC),shC:c(J.shC),legs:J.legs.map(l=>({hip:c(l.hip),knee:c(l.knee),ankle:c(l.ankle),toe:c(l.toe)})),
+      arms:J.arms.map(a=>({sh:c(a.sh),el:c(a.el),wr:a.wr.clone()}))};
+  }
   function apply(J){
+    pose(J);
+    const P=J.P;curl(!!(P&&(P.plate||P.cbar||P.pullbar||P.dipbar)));
+    if(P&&(P.pullbar||P.dipbar)){ // снаряд неподвижен — подстраиваем тело так, чтобы ладони легли на перекладину
+      const g=grip(),tgt=new T.Vector3(0,P.hand.y,0),dl=new T.Vector3(tgt.x-g.x,tgt.y-g.y,0);
+      if(dl.length()>.05)pose(shifted(J,dl));
+    }
+  }
+  function curl(on){
+    fingers.forEach(({b,lq,side,f,n})=>{
+      if(!on){b.quaternion.copy(lq);return}
+      const base=f==='Thumb'?[20,25,25][n-1]:[70,80,60][n-1],sg=(side==='Left'?1:-1)*MX.gripSign;
+      const q=new T.Quaternion().setFromAxisAngle(f==='Thumb'?new T.Vector3(0,0,1):new T.Vector3(0,0,1),sg*base*Math.PI/180);
+      b.quaternion.copy(lq).multiply(q);
+    });
+  }
+  function pose(J){
     const hips=bones.Hips;hips.parent.updateWorldMatrix(true,false);
     hips.position.copy(hips.parent.worldToLocal(J.hipC.clone().add(hipsOff)));hips.updateMatrixWorld(true);
     const u=new T.Vector3().subVectors(J.shC,J.hipC).normalize();
@@ -119,14 +148,15 @@ async function mxRig(){
       const pole=lg.knee.clone().sub(lg.hip.clone().add(lg.ankle).multiplyScalar(.5));
       const r=_ik3(A,B,rest[side+'UpLeg'].len,rest[side+'Leg'].len,pole);
       align(side+'UpLeg',r.mid.clone().sub(A));align(side+'Leg',r.end.clone().sub(r.mid));
-      align(side+'Foot',lg.toe.clone().sub(lg.ankle));
+      {const v=lg.toe.clone().sub(lg.ankle),hl=Math.hypot(v.x,v.z)||1,sc=_fr.hor/hl;
+       align(side+'Foot',new T.Vector3(v.x*sc,v.y-_fr.drop,v.z*sc));}
       const ar=J.arms[i],S=wp(bones[side+'Arm']);
       const pole2=ar.el.clone().sub(ar.sh.clone().add(ar.wr).multiplyScalar(.5));
       const r2=_ik3(S,ar.wr,rest[side+'Arm'].len,rest[side+'ForeArm'].len,pole2);
       align(side+'Arm',r2.mid.clone().sub(S));align(side+'ForeArm',r2.end.clone().sub(r2.mid));
     });
   }
-  return {holder,apply};
+  return {holder,apply,grip,info:()=>({grip:grip(),toeY:Math.min(wp(bones.LeftToeBase).y,wp(bones.RightToeBase).y),ankleH})};
 }
 async function playerMxProc(wrap,key,opts={}){
   const rig=await mxRig(),T=THREE;
@@ -134,7 +164,7 @@ async function playerMxProc(wrap,key,opts={}){
     setup:scene=>{scene.add(rig.holder);
       const k1=new T.DirectionalLight(0xffffff,1.6);k1.position.set(120,180,320);scene.add(k1);
       const f=new T.DirectionalLight(0x9fb4ff,.9);f.position.set(-200,120,200);scene.add(f);},
-    onPose:J=>rig.apply(J)});
+    onPose:(J,a)=>{rig.apply(J);a.holdAt(rig.grip())}});
   const stop=pl.stop;pl.stop=()=>{rig.holder.removeFromParent();stop()};
   return pl;
 }
@@ -149,7 +179,7 @@ async function thumbMx(key,mus){
   a.scene.add(rig.holder);
   const k1=new T.DirectionalLight(0xffffff,1.6);k1.position.set(120,180,320);a.scene.add(k1);
   const f=new T.DirectionalLight(0x9fb4ff,.9);f.position.set(-200,120,200);a.scene.add(f);
-  const J=a.pose(key==='plank'?0:.5);rig.apply(J);
+  const J=a.pose(key==='plank'?0:.5);rig.apply(J);a.holdAt(rig.grip());
   camFor(cam,key,.55,.17,300/230);
   _mxTR.setSize(300,230,false);_mxTR.render(a.scene,cam);
   const url=_mxTR.domElement.toDataURL('image/png');

@@ -81,6 +81,12 @@ function Athlete3D(key,opts={}){
     if(P.cable&&!P.seat){box(10,250,14,0x2b2b34,-60,125,0);box(86,10,14,0x2b2b34,-18,245,0)}
   }
 
+  let lastP=null;
+  function holdAt(v){
+    const P=lastP;if(!P||P.pullbar||P.dipbar)return;
+    if(P.plate){bar.visible=true;bar.position.set(v.x,v.y,0)}
+    if(P.cbar){cbarM.position.set(v.x,v.y,0);if(P.cable)place(cableM,V(P.cable.x,P.cable.y,0),V(v.x,v.y,0))}
+  }
   const MUS={legs:[],glutes:[],back:[],chest:[],shoulders:[],arms:[],abs:[]};
   const mats={legs:skin('legs'),back:skin('back'),chest:skin('chest'),shoulders:skin('shoulders'),arms:skin('arms'),abs:skin('abs')};
   const hl=(opts.mus||[]).reduce((o,k)=>(o[k]=1,o),{});
@@ -94,7 +100,7 @@ function Athlete3D(key,opts={}){
   function pose(p){
     const P=POSES[key](p);buildProps(P);
     const sP=V(P.shoulder.x,P.shoulder.y,0),hP=V(P.hip.x,P.hip.y,0);
-    const J={legs:[],arms:[],hipC:hP.clone(),shC:sP.clone(),P};
+    const J={legs:[],arms:[],hipC:hP.clone(),shC:sP.clone(),P};lastP=P;
     const u=new T.Vector3().subVectors(sP,hP).normalize();
     const ang=Math.atan2(-u.x,u.y),q=new T.Quaternion().setFromAxisAngle(Zax,ang);
     const loc=(f,h,z)=>V(hP.x,hP.y,0).add(new T.Vector3(f,h,0).applyQuaternion(q)).setZ(z); // точка в системе корпуса
@@ -152,7 +158,7 @@ function Athlete3D(key,opts={}){
     return J;
   }
   if(opts.bodyless)group.children.forEach(c=>{if(c!==bar)c.visible=false});
-  return {scene,group,pose,dispose(){scene.traverse(o=>{if(o.geometry)o.geometry.dispose()})}};
+  return {scene,group,pose,holdAt,dispose(){scene.traverse(o=>{if(o.geometry)o.geometry.dispose()})}};
 }
 
 function makeRenderer(w,h,thumb){
@@ -188,7 +194,7 @@ function player3d(wrap,key,opts={}){
     const dt=Math.min(.05,(now-st.last)/1000);st.last=now;
     if(!st.paused){
       st.t+=dt*st.speed;const c=st.t/st.period,cyc=c-Math.floor(c),p=.5-.5*Math.cos(2*Math.PI*cyc);
-      const J=ath.pose(p);if(opts.onPose)opts.onPose(J);
+      const J=ath.pose(p);if(opts.onPose)opts.onPose(J,ath);
       const ph=cyc<.5?0:1;if(ph!==st.cyc){st.cyc=ph;st.onPhase&&st.onPhase(ph)}
       const n=Math.floor(c);if(n!==st.reps){st.reps=n;st.onRep&&st.onRep(n)}
     }
@@ -198,7 +204,7 @@ function player3d(wrap,key,opts={}){
     renderer.render(ath.scene,cam);
     st.raf=requestAnimationFrame(loop);
   }
-  {const J0=ath.pose(0);if(opts.onPose)opts.onPose(J0);}st.raf=requestAnimationFrame(loop);
+  {const J0=ath.pose(0);if(opts.onPose)opts.onPose(J0,ath);}st.raf=requestAnimationFrame(loop);
   st.stop=()=>{cancelAnimationFrame(st.raf);ath.dispose();renderer.dispose();try{renderer.forceContextLoss()}catch(e){}cv.remove()};
   return st;
 }
