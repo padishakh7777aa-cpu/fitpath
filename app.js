@@ -4,18 +4,18 @@ const hap=t=>{try{tg&&tg.HapticFeedback&&tg.HapticFeedback.impactOccurred(t||'li
 const $=s=>document.querySelector(s);
 const store={get(k,d){try{const v=localStorage.getItem('fp_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('fp_'+k,JSON.stringify(v))}catch(e){}}};
 const today=()=>new Date().toISOString().slice(0,10);
-const S={level:store.get('level',null),tab:'plan',ex:null,prof:store.get('prof',{sex:'m',age:25,w:75,h:178,act:1.55,goal:'mass'}),age18:false,done:store.get('done',{}),log:store.get('log',{}),view:35};
+const S={level:store.get('level',null),tab:'plan',ex:null,prof:store.get('prof',{sex:'m',age:25,w:75,h:178,act:1.55,goal:'mass'}),age18:false,done:store.get('done',{}),log:store.get('log',{}),view:35,prog:store.get('prog',null),sess:store.get('sess',null),screen:null,more:'tools'};
 let activePlayer=null;
 const stopPlayer=()=>{if(activePlayer){activePlayer.stop();activePlayer=null}};
 const quoteOfDay=()=>QUOTES[Math.floor(Date.now()/864e5)%QUOTES.length];
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred('success')}catch(_){}setTimeout(()=>e.remove(),1800)}
 
-const TABS=[['plan','🏋️','План'],['tech','🎬','Техника'],['food','🥗','Питание'],['sup','💊','Добавки'],['health','❤️','Здоровье']];
+const TABS=[['plan','🏋️','План'],['tech','🎬','Техника'],['mech','🧠','Механика'],['bio','🧬','Био'],['food','🥗','Питание'],['more','⋯','Ещё']];
 
 function renderNav(){
   const n=$('#nav');
   n.innerHTML=TABS.map(([id,i,l])=>`<button data-t="${id}" class="${S.tab===id&&!S.ex?'on':''}"><span class="i">${i}</span>${l}</button>`).join('');
-  n.querySelectorAll('button').forEach(b=>b.onclick=()=>{hap();S.tab=b.dataset.t;S.ex=null;render()});
+  n.querySelectorAll('button').forEach(b=>b.onclick=()=>{hap();S.tab=b.dataset.t;S.ex=null;S.screen=null;S.progPick=false;render()});
   n.style.display=S.level?'flex':'none';
   const c=$('#levelChip');
   c.style.display=S.level?'block':'none';
@@ -24,15 +24,17 @@ function renderNav(){
 }
 
 function render(){
-  stopPlayer();
+  stopPlayer();if(S._tick){clearInterval(S._tick);S._tick=null}
   renderNav();
   const v=$('#view');
   window.scrollTo(0,0);
   if(!S.level){v.innerHTML=levelScreen();bindLevel();return}
   if(S.ex){v.innerHTML=exScreen(S.ex);bindEx(S.ex);return}
-  const map={plan:planScreen,tech:techScreen,food:foodScreen,sup:supScreen,health:healthScreen};
+  if(S.screen==='session'&&S.sess){v.innerHTML=sessionScreen();bindSession();return}
+  if(S.screen==='summary'&&S.summary){v.innerHTML=summaryScreen();$('#sumok').onclick=()=>{S.screen=null;S.summary=null;render()};return}
+  const map={plan:planScreen,tech:techScreen,mech:mechScreen,bio:bioScreen,food:foodScreen,more:moreScreen};
   v.innerHTML=map[S.tab]()+`<div class="disc">Неофициальное приложение в духе легенды бодибилдинга. Не связано с Ронни Коулманом.</div>`;
-  ({plan:bindPlan,tech:bindTech,food:bindFood,sup:()=>{},health:bindHealth})[S.tab]();
+  ({plan:bindPlan,tech:bindTech,mech:()=>{},bio:bindBio,food:bindFood,more:bindMore})[S.tab]();
 }
 
 /* ---------- Выбор уровня ---------- */
@@ -43,31 +45,12 @@ function levelScreen(){
   Object.values(LEVELS).map(l=>`<div class="card click lvl" data-l="${l.id}"><div class="ico">${l.ico}</div><div><b>${l.name}</b> <span class="tag">${l.tag}</span><div class="hint">${l.desc}</div></div></div>`).join('');
 }
 function bindLevel(){
-  document.querySelectorAll('[data-l]').forEach(c=>c.onclick=()=>{hap('medium');S.level=c.dataset.l;store.set('level',S.level);S.tab='plan';render()});
+  document.querySelectorAll('[data-l]').forEach(c=>c.onclick=()=>{hap('medium');S.level=c.dataset.l;store.set('level',S.level);S.prog=null;store.set('prog',null);S.tab='plan';render()});
 }
 
-/* ---------- План ---------- */
-function exLabel(id){return id.startsWith('text:')?id.slice(5):EX[id].name}
 function weekCount(){const now=Date.now();return Object.keys(S.done).filter(d=>now-new Date(d).getTime()<7*864e5).length}
 function streak(){let n=0,d=new Date();if(!S.done[today()])d.setDate(d.getDate()-1);
   for(;;){const k=d.toISOString().slice(0,10);if(S.done[k]){n++;d.setDate(d.getDate()-1)}else break}return n}
-function planScreen(){
-  const P=PROGRAMS[S.level],q=quoteOfDay(),target=S.level==='beginner'?3:P.days.length>=5?5:4;
-  const total=Object.keys(S.done).length;
-  return `<div class="hero"><div class="q">${q[0]}</div><div class="tr">${q[1]}</div></div>
-  <div class="stats"><div><b>${weekCount()}/${target}</b><span>за неделю</span></div><div><b>${streak()}🔥</b><span>дней подряд</span></div><div><b>${total}</b><span>всего тренировок</span></div></div>
-  <h1>${P.title}</h1><p>${P.intro}</p>
-  <div class="card"><b>Разминка</b><div class="hint">${P.warm}</div></div>`+
-  P.days.map((d,di)=>`<div class="card"><b>${d.name}</b><table>${d.items.map(([id,sr,note])=>{
-    const anim=!id.startsWith('text:');
-    return `<tr><td>${anim?`<a href="#" data-ex="${id}" style="color:var(--accent);text-decoration:none">▶ ${exLabel(id)}</a>`:exLabel(id)}${note?`<div class="hint">${note}</div>`:''}</td><td style="white-space:nowrap"><b>${sr}</b></td></tr>`}).join('')}</table>
-    <button class="btn small done" data-done="${di}">✔ Тренировка выполнена</button></div>`).join('')+
-  `<h2>Правила прогресса</h2><div class="card"><ul>${P.rules.map(r=>`<li>${r}</li>`).join('')}</ul></div>`;
-}
-function bindPlan(){
-  document.querySelectorAll('[data-ex]').forEach(a=>a.onclick=e=>{e.preventDefault();hap();S.ex=a.dataset.ex;render()});
-  document.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{S.done[today()]=PROGRAMS[S.level].days[+b.dataset.done].name;store.set('done',S.done);hap('heavy');toast('Lightweight baby!');setTimeout(render,900)});
-}
 
 /* ---------- Техника ---------- */
 function techScreen(){
@@ -106,7 +89,7 @@ function exScreen(k){
   <div class="stage3" id="figwrap"><div class="phase" id="ph">${e.phases[0]}</div><div class="reps" id="rp">Повтор 1</div><div class="hintdrag">☝ покрути пальцем</div></div>
   <div class="views" id="views"><button data-v="0">Сбоку</button><button data-v="35" class="on">3/4</button><button data-v="90">Спереди</button><button data-v="spin">⟳ Вращать</button></div>
   <div class="ctrl"><button class="btn ghost small" id="pp">⏸ Пауза</button><button class="btn ghost small" id="sp">🐢 Медленно</button></div>
-  <h2>Как делать</h2><div class="card"><ol style="padding-left:20px;margin:0">${e.steps.map(s=>`<li>${s}</li>`).join('')}</ol></div>
+  <h2>Как делать</h2><div class="card"><ol style="padding-left:20px;margin:0">${e.steps.map(s=>`<li>${s}</li>`).join('')}</ol></div>${mechHtml(k)}
   <h2>Частые ошибки</h2><div class="card">${e.mistakes.map(m=>`<span class="tag bad">${m}</span>`).join('')}</div>
   <div class="card"><b>Темп:</b> ${e.tempo}</div>${logHtml(k)}`;
 }
