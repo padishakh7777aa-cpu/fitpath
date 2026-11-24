@@ -132,3 +132,17 @@ details.card[open] summary{margin-bottom:8px;color:var(--accent)}
 .ach .a{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;text-align:center;opacity:.45;filter:grayscale(1)}
 .ach .a.on{opacity:1;filter:none;border-color:rgba(245,179,1,.5);background:linear-gradient(135deg,#1e1507,#15151b)}
 .ach .i{font-size:30px}.ach b{display:block;font-size:14px;margin-top:4px}.ach span{font-size:11px;color:var(--hint)}
+
+/* ===== Простой интерфейс ===== */
+button.big{display:flex;gap:16px;align-items:center;width:100%;text-align:left;background:linear-gradient(135deg,#1e1507,#15151b);border:1px solid rgba(245,179,1,.4);color:var(--text);border-radius:20px;padding:20px;margin:12px 0;font-size:19px;font-weight:700;cursor:pointer}
+button.big span{font-size:34px}button.big small{display:block;font-weight:400;font-size:13px;color:var(--hint);margin-top:2px}
+button.big:active{transform:scale(.98);border-color:var(--accent)}
+.btn.xl{font-size:20px;padding:18px;border-radius:16px}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(245,179,1,.5)}70%{box-shadow:0 0 0 14px rgba(245,179,1,0)}100%{box-shadow:0 0 0 0 rgba(245,179,1,0)}}
+.flame{font-family:Impact,Haettenschweiler,sans-serif;font-size:20px;color:var(--accent)}
+.dots{font-size:26px;letter-spacing:6px;color:var(--accent);margin:4px 0}
+.quote{text-align:center;font-family:Impact,Haettenschweiler,sans-serif;font-style:italic;font-size:20px;color:var(--accent);margin:14px 6px;text-transform:uppercase}
+.quote .hint{font-family:-apple-system,system-ui,sans-serif;font-style:normal;text-transform:none;font-size:12px}
+.bigline{text-align:center;font-family:Impact,Haettenschweiler,sans-serif;font-size:46px;color:var(--accent);margin:10px 0 2px;letter-spacing:1px}
+.lnk{color:var(--hint);font-size:13px;text-decoration:underline}

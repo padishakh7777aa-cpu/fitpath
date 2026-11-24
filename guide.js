@@ -115,51 +115,44 @@ function updateGuide(){
   setStage(exKey(D.ex[s.ei].id));gWork(g,D,steps,s);
 }
 function gIntro(g,D,steps){
-  const wk=weekInfo(progById(g.pid));
-  $('#gbody').innerHTML=`<h1 style="margin:12px 0 4px">${D.n}</h1><div class="hint">${D.focus} · около ${gDur(g)} мин · ${D.ex.length} упражнений</div>
-  ${wk.isDL?'<div class="warnbox"><b>Неделя разгрузки</b>: делай 2 подхода на упражнение и вес −10%.</div>':''}
+  $('#gbody').innerHTML=`<h1 style="margin:12px 0 4px">${D.n}</h1><div class="hint">${D.ex.length} упражнений · около ${gDur(g)} минут</div>
+  <button class="btn xl pulse" id="gstart" style="margin:12px 0">▶ Погнали!</button>
   <div class="card"><table>${D.ex.map((e,ei)=>{const w=g.base[ei],k=exKey(e.id),bw=BWEX.includes(k);
-    return `<tr><td><b>${exName(e.id)}</b><div class="hint">${e.s}×${e.r} · отдых ${fmtRest(e.rest)}</div></td><td style="text-align:right;white-space:nowrap">${bw?'вес тела':g.unk[ei]?'подбери вес':'<b>'+fw(w)+' кг</b>'}</td></tr>`}).join('')}</table></div>
-  <div class="hint" style="margin:8px 0">Я покажу каждое упражнение, подскажу вес и запущу отдых. От тебя — нажимать «Сделал подход» и отмечать, насколько было тяжело.</div>
-  <button class="btn" id="gstart">▶ Погнали!</button>`;
-  $('#gstart').onclick=()=>{hap('medium');g.phase='step';store.set('gsess',g);updateGuide()};
+    return `<tr><td><b>${exName(e.id)}</b><div class="hint">${e.s} подхода по ${e.r}</div></td><td style="text-align:right;white-space:nowrap">${bw?'вес тела':g.unk[ei]?'подберём':'<b>'+fw(w)+' кг</b>'}</td></tr>`}).join('')}</table></div>
+  <div class="hint" style="text-align:center">Просто делай то, что показываю. Вес и отдых я подскажу.</div>`;
+  $('#gstart').onclick=()=>{hap('medium');beep(880,.08);g.phase='step';store.set('gsess',g);updateGuide()};
 }
 function gWork(g,D,steps,s){
   const e=D.ex[s.ei],k=exKey(e.id),ex=EX[k],bw=BWEX.includes(k),warm=s.t==='warm';
-  const w=warm?s.w:(g.w[s.ei]??g.base[s.ei]),pr=s.pr||{};
-  const timed=!warm&&pr.timed;
+  const w=warm?s.w:(g.w[s.ei]??g.base[s.ei]),pr=s.pr||{},timed=!warm&&pr.timed;
   g.cur={w:w||0,r:s.r};
-  const unk=g.unk[s.ei]&&!warm&&!bw&&!timed&&s.si===0&&!(g.w[s.ei]>0);
+  const unk=g.unk[s.ei]&&!warm&&!bw&&!timed&&!(g.w[s.ei]>0);
+  const big=()=>timed?`${s.r} секунд`:`${bw?(g.cur.w>0?'+'+fw(g.cur.w)+' кг':'вес тела'):fw(g.cur.w)+' кг'} × ${g.cur.r}`;
   $('#gbody').innerHTML=`
-   <div class="row sb" style="margin-top:12px"><h1 style="margin:0">${exName(e.id)}</h1><span class="tag ${warm?'warn':''}">${warm?'Разминка':`Подход ${s.si+1}/${s.sets}`}</span></div>
-   <div class="hint">${warm?'Лёгкий подводящий подход, без усилия':`Цель: ${e.r}${pr.open?'':''} · запас ${e.rir} повт.`}</div>${e.note&&!warm?`<div class="hint">💡 ${e.note}</div>`:''}
-   ${timed?`<div class="card" style="text-align:center"><div class="hint">Держи ${s.r} секунд</div><div id="gtimer" style="font-family:Impact,sans-serif;font-size:64px;color:var(--accent)">${s.r}</div><button class="btn" id="gtstart">⏱ Старт</button></div>`:
-   `<div class="gsteppers">
-     ${bw?`<div class="gst"><span class="hint">Вес тела ${w>0?'+ '+fw(w)+' кг':''}</span><div><button data-d="w-2.5">−</button><b id="gw">${w>0?'+'+fw(w):'+0'}</b><button data-d="w+2.5">+</button></div></div>`:
-        `<div class="gst"><span class="hint">Вес, кг</span><div><button data-d="w-2.5">−</button><b id="gw">${fw(w||0)}</b><button data-d="w+2.5">+</button></div></div>`}
+   <div class="row sb" style="margin-top:12px"><h1 style="margin:0">${exName(e.id)}</h1><span class="tag ${warm?'warn':''}">${warm?'Разминка':`${s.si+1} из ${s.sets}`}</span></div>
+   <div class="bigline" id="gbig">${unk?'Выбери вес':big()}</div>
+   <div class="hint" style="text-align:center">${warm?'Лёгкий подход для разогрева':`Сделай ${e.r} повторений. Остановись, когда останется ещё ${e.rir} в запасе.`}</div>
+   ${timed?`<div class="card" style="text-align:center"><div id="gtimer" style="font-family:Impact,sans-serif;font-size:64px;color:var(--accent)">${s.r}</div><button class="btn xl" id="gtstart">⏱ Старт</button></div>`:
+   `<div class="gsteppers" id="gst" style="${unk?'':'display:none'}">
+     <div class="gst"><span class="hint">${bw?'Добавить вес, кг':'Вес, кг'}</span><div><button data-d="w-2.5">−</button><b id="gw">${fw(g.cur.w)}</b><button data-d="w+2.5">+</button></div></div>
      <div class="gst"><span class="hint">Повторы</span><div><button data-d="r-1">−</button><b id="gr">${s.r}</b><button data-d="r+1">+</button></div></div></div>
-   ${unk?`<div class="warnbox" style="font-size:13px">Стартовый вес пока не знаю. Подбери такой, чтобы закончить подход с запасом ${e.rir} повт. — дальше я запомню и буду подсказывать сам.</div>`:''}
-   <button class="btn" id="gdone" style="font-size:18px;padding:16px">✔ Сделал подход</button>`}
-   ${ex&&!warm?`<details class="card"><summary>📖 Как делать</summary><ol style="padding-left:20px;margin:8px 0">${ex.steps.map(x=>`<li>${x}</li>`).join('')}</ol><div>${ex.mistakes.map(m=>`<span class="tag bad">${m}</span>`).join('')}</div></details>`:''}
-   <div class="row" style="gap:8px;margin-top:8px"><button class="btn ghost small" id="gskip">⏭ Пропустить</button><button class="btn ghost small" id="gswap" ${warm?'style="display:none"':''}>↩ Предыдущий</button></div>`;
-  const cur=g.cur;
+   ${unk?`<div class="hint" style="margin:4px 0 8px">Не знаю твой стартовый вес. Подбери такой, чтобы закончить с запасом — дальше я запомню.</div>`:''}
+   <button class="btn xl" id="gdone">✔ Сделал</button>
+   ${unk?'':'<div style="text-align:center;margin-top:8px"><a href="#" id="gedit" class="lnk">Изменить вес или повторы</a></div>'}`}
+   ${ex&&!warm?`<details class="card"><summary>📖 Как делать правильно</summary><ol style="padding-left:20px;margin:8px 0">${ex.steps.map(x=>`<li>${x}</li>`).join('')}</ol><div>${ex.mistakes.map(m=>`<span class="tag bad">${m}</span>`).join('')}</div></details>`:''}
+   <div style="text-align:center;margin-top:10px"><a href="#" id="gskip" class="lnk">Пропустить упражнение</a></div>`;
+  const cur=g.cur,gb=$('#gbig');
+  const ge=$('#gedit');if(ge)ge.onclick=ev=>{ev.preventDefault();$('#gst').style.display='grid';ge.remove()};
   document.querySelectorAll('.gsteppers [data-d]').forEach(b=>b.onclick=()=>{
-    const [k2,op]=[b.dataset.d[0],b.dataset.d.slice(1)],v=parseFloat(op);hap();
-    if(k2==='w'){cur.w=Math.max(0,+(cur.w+v).toFixed(2));$('#gw').textContent=bw?'+'+fw(cur.w):fw(cur.w)}
-    else{cur.r=Math.max(1,cur.r+v);$('#gr').textContent=cur.r}});
-  const done=(r)=>{
-    hap('heavy');
-    g.res.push({t:s.t,ei:s.ei,si:s.si,w:cur.w,r:r??cur.r,fb:null});
-    if(!warm)g.w[s.ei]=cur.w;
-    g.phase='rest';g.restEnd=Date.now()+(s.rest||60)*1000;g.restTotal=(s.rest||60);store.set('gsess',g);updateGuide();
-  };
+    const k2=b.dataset.d[0],v=parseFloat(b.dataset.d.slice(1));hap();
+    if(k2==='w'){cur.w=Math.max(0,+(cur.w+v).toFixed(2));$('#gw').textContent=fw(cur.w)}else{cur.r=Math.max(1,cur.r+v);$('#gr').textContent=cur.r}
+    if(gb)gb.textContent=big()});
+  const done=r=>{hap('heavy');g.res.push({t:s.t,ei:s.ei,si:s.si,w:cur.w,r:r??cur.r,fb:null});
+    if(!warm)g.w[s.ei]=cur.w;g.phase='rest';g.restEnd=Date.now()+(s.rest||60)*1000;g.restTotal=(s.rest||60);store.set('gsess',g);updateGuide()};
   const bd=$('#gdone');if(bd)bd.onclick=()=>done();
   const ts=$('#gtstart');if(ts)ts.onclick=()=>{let left=s.r;ts.disabled=true;const el=$('#gtimer');
-    GD.timer=setInterval(()=>{left--;el.textContent=left;if(left<=0){clearInterval(GD.timer);GD.timer=null;done(s.r)}},1000)};
-  $('#gskip').onclick=()=>{
-    // пропуск упражнения целиком
-    let j=g.i;while(steps[j]&&steps[j].ei===s.ei)j++;g.i=j;g.phase=j>=steps.length?'step':'step';store.set('gsess',g);updateGuide()};
-  $('#gswap').onclick=()=>{let j=g.i;while(j>0&&steps[j-1].ei===s.ei)j--;if(j>0){const pe=steps[j-1].ei;while(j>0&&steps[j-1].ei===pe)j--}g.i=j;store.set('gsess',g);updateGuide()};
+    GD.timer=setInterval(()=>{left--;el.textContent=left;if(left<=3&&left>0)beep(660,.1);if(left<=0){clearInterval(GD.timer);GD.timer=null;beep(1040,.4,.2);done(s.r)}},1000)};
+  $('#gskip').onclick=ev=>{ev.preventDefault();let j=g.i;while(steps[j]&&steps[j].ei===s.ei)j++;g.i=j;g.phase='step';store.set('gsess',g);updateGuide()};
 }
 function gRest(g,D,steps,s,nx){
   const last=g.res[g.res.length-1],ne=nx?D.ex[nx.ei]:null;
@@ -167,7 +160,7 @@ function gRest(g,D,steps,s,nx){
   $('#gbody').innerHTML=`<div style="text-align:center;margin-top:10px"><div class="hint">Отдых</div>
    <div class="ring" id="gring"><div class="ringin"><b id="gcount">0:00</b></div></div></div>
    ${nx?`<div class="card"><div class="hint">Дальше</div><b>${exName(ne.id)}</b><div class="hint">${nx.t==='warm'?'Разминка':`Подход ${nx.si+1}/${nx.sets}`} · ${BWEX.includes(exKey(ne.id))?'вес тела':fw(nw)+' кг'} × ${nx.r}${parseR(ne.r).timed?' сек':''}</div></div>`:`<div class="card"><b>Это был последний подход 🎉</b><div class="hint">Нажми «Завершить», чтобы увидеть итоги.</div></div>`}
-   ${last&&last.t==='work'?`<div class="card"><div class="hint" style="margin-bottom:6px">Как это было?</div><div class="seg" id="gfb"><button data-f="hard">😅 Тяжело</button><button data-f="ok" class="on">👌 Норм</button><button data-f="easy">😎 Легко</button></div></div>`:''}
+   ${last&&last.t==='work'?`<div class="card"><div class="hint" style="margin-bottom:6px">Как был подход?</div><div class="seg" id="gfb"><button data-f="hard">😅 Тяжело</button><button data-f="ok" class="on">👌 Нормально</button><button data-f="easy">😎 Легко</button></div></div>`:''}
    <div class="row" style="gap:8px"><button class="btn ghost" id="g30">+30 сек</button><button class="btn" id="gnext">${nx?'Дальше →':'🏁 Завершить'}</button></div>`;
   const fb=last&&last.t==='work'?last:null;
   document.querySelectorAll('#gfb button').forEach(b=>b.onclick=()=>{

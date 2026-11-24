@@ -35,15 +35,17 @@ const stopPlayer=()=>{if(activePlayer){activePlayer.stop();activePlayer=null}};
 const quoteOfDay=()=>QUOTES[Math.floor(Date.now()/864e5)%QUOTES.length];
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred('success')}catch(_){}setTimeout(()=>e.remove(),1800)}
 
-const TABS=[['plan','🏋️','План'],['tech','🎬','Техника'],['mech','🧠','Механика'],['bio','🧬','Био'],['food','🥗','Питание'],['more','⋯','Ещё']];
+const TABS=[['plan','🏠','Сегодня'],['food','🥗','Питание'],['prog','📈','Прогресс'],['more','☰','Ещё']];
+const SUBTABS=['tech','mech','bio','tools','sup','health'];
 
 function renderNav(){
   const n=$('#nav');
-  n.innerHTML=TABS.map(([id,i,l])=>`<button data-t="${id}" class="${S.tab===id&&!S.ex?'on':''}"><span class="i">${i}</span>${l}</button>`).join('');
+  const cur=SUBTABS.includes(S.tab)?'more':S.tab;
+  n.innerHTML=TABS.map(([id,i,l])=>`<button data-t="${id}" class="${cur===id&&!S.ex?'on':''}"><span class="i">${i}</span>${l}</button>`).join('');
   n.querySelectorAll('button').forEach(b=>b.onclick=()=>{hap();S.tab=b.dataset.t;S.ex=null;S.screen=null;S.progPick=false;render()});
   n.style.display=(S.level&&S.screen!=='guide')?'flex':'none';
   const c=$('#levelChip');
-  c.style.display=S.level?'block':'none';
+  c.style.display='none';
   if(S.level)c.textContent=LEVELS[S.level].ico+' '+LEVELS[S.level].name;
   c.onclick=()=>{S.level=null;S.ex=null;render()};
 }
@@ -54,15 +56,16 @@ function render(){
   renderNav();
   const v=$('#view');
   window.scrollTo(0,0);
-  if(!S.level){v.innerHTML=levelScreen();bindLevel();return}
+  if(!S.level){v.innerHTML=startScreen();bindStart();return}
   if(S.ex){v.innerHTML=exScreen(S.ex);bindEx(S.ex);return}
   if(S.screen==='onb'){v.innerHTML=onbScreen();bindOnb();return}
   if(S.screen==='guide'&&S.g){v.innerHTML=guideScreen();bindGuide();return}
   if(S.screen==='session'&&S.sess){v.innerHTML=sessionScreen();bindSession();return}
   if(S.screen==='summary'&&S.summary){v.innerHTML=summaryScreen();$('#sumok').onclick=()=>{S.screen=null;S.summary=null;render()};$('#share').onclick=()=>shareSummary();return}
-  const map={plan:planScreen,tech:techScreen,mech:mechScreen,bio:bioScreen,food:foodScreen,more:moreScreen};
-  v.innerHTML=map[S.tab]()+`<div class="disc">Неофициальное приложение в духе легенды бодибилдинга. Не связано с Ронни Коулманом.</div>`;
-  ({plan:bindPlan,tech:bindTech,mech:()=>{},bio:bindBio,food:bindFood,more:bindMore})[S.tab]();
+  const map={plan:planScreen,tech:techScreen,mech:mechScreen,bio:bioScreen,food:foodScreen,prog:progScreen,tools:toolsScreen,sup:supScreen,health:healthScreen,more:moreScreen};
+  v.innerHTML=(SUBTABS.includes(S.tab)?'<button class="back" id="moreback">‹ Ещё</button>':'')+map[S.tab]()+`<div class="disc">Неофициальное приложение в духе легенды бодибилдинга. Не связано с Ронни Коулманом.</div>`;
+  ({plan:bindPlan,tech:bindTech,mech:()=>{},bio:bindBio,food:bindFood,prog:bindProg,tools:bindTools,sup:()=>{},health:bindHealth,more:bindMore})[S.tab]();
+  const mb=$('#moreback');if(mb)mb.onclick=()=>{S.tab='more';render()};
 }
 
 /* ---------- Выбор уровня ---------- */

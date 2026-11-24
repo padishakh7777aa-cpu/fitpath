@@ -25,30 +25,32 @@ function nextDayIdx(P){
   const ks=Object.keys(S.done).sort();if(!ks.length)return 0;
   const i=P.days.findIndex(d=>d.n===S.done[ks[ks.length-1]]);return i<0?0:(i+1)%P.days.length;
 }
+function greeting(){
+  const h=new Date().getHours(),n=(()=>{try{return tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user&&tg.initDataUnsafe.user.first_name||''}catch(e){return ''}})();
+  return (h<5?'Доброй ночи':h<12?'Доброе утро':h<18?'Добрый день':'Добрый вечер')+(n?', '+n:'')+'!';
+}
 function planScreen(){
   if(S.progPick)return progLibrary();
-  const P=curProg(),q=quoteOfDay(),target=P.freq,total=Object.keys(S.done).length,nd=nextDayIdx(P),doneToday=!!S.done[today()];
-  return `<div class="hero"><div class="q">${q[0]}</div><div class="tr">${q[1]}</div></div>
-  ${S.g?`<div class="card" style="border-color:var(--accent)"><b>Тренировка с гидом в процессе</b><div class="hint">${guideDay(S.g).n}</div><button class="btn" id="gresume" style="margin-top:8px">▶ Продолжить</button></div>`:
-   (doneToday?`<div class="card"><b>✅ Сегодня ты уже потренировался</b><div class="hint">Отдых тоже часть программы. Следующая: ${P.days[nd].n}</div></div>`:
-   `<div class="card cta"><div class="hint">Твоя тренировка на сегодня</div><h1 style="margin:2px 0 4px">${P.days[nd].n}</h1><div class="hint">${P.days[nd].focus} · ${P.days[nd].ex.length} упражнений · ~${gDur({pid:P.id,di:nd})} мин</div>
-    <button class="btn" id="gstartnow" data-gstart="${nd}" style="margin-top:10px;font-size:17px;padding:14px">▶ Начать тренировку</button>
-    <div class="hint" style="margin-top:6px">Покажу каждое упражнение, подскажу вес и отдых. Тебе — только делать.</div></div>`)}
-  ${weekBanner(P)}
-  <div class="stats"><div><b>${weekCount()}/${target}</b><span>за неделю</span></div><div><b>${streak()}🔥</b><span>дней подряд</span></div><div><b>${total}</b><span>всего тренировок</span></div></div>
-  <div class="card"><div class="row sb"><span class="tag">${LEVELS[P.lvl].name}</span><span class="hint">${P.freq} дн/нед · ${P.weeks} нед</span></div>
-   <h1 style="margin:8px 0 2px">${P.name}</h1><div class="hint" style="color:var(--accent)">${P.tag}</div>
-   <p>${P.desc}</p><p class="hint"><b>Для кого:</b> ${P.who}</p>
-   <button class="btn ghost small" id="pickprog">🔁 Сменить</button> <button class="btn ghost small" id="findprog">🎯 Подобрать</button></div>
-  ${S.sess?`<div class="card" style="border-color:var(--accent)"><b>Идёт тренировка</b><div class="hint">${sessDay(S.sess).n}</div><button class="btn small" id="resume" style="margin-top:8px">▶ Продолжить</button></div>`:''}
-  ${P.days.map((d,di)=>`<div class="card" ${di===nd&&!doneToday?'style="border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset"':''}><div class="row sb"><b>${di===nd&&!doneToday?'⭐ Сегодня: ':''}${d.n}</b><span class="tag warn">${d.focus}</span></div>
-   <table>${d.ex.map(e=>`<tr><td>${hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">▶ ${exName(e.id)}</a>`:exName(e.id)}${e.note?`<div class="hint">${e.note}</div>`:''}</td>
-   <td style="white-space:nowrap;text-align:right"><b>${e.s}×${e.r}</b><div class="hint">RIR ${e.rir} · ${fmtRest(e.rest)}</div></td></tr>`).join('')}</table>
-   <button class="btn" data-gstart="${di}" style="margin-top:10px">▶ Начать с подсказками</button><button class="btn ghost small" data-start="${di}" style="margin-top:8px">Ручной ввод</button></div>`).join('')}
-  <button class="btn ghost" id="freesess">➕ Свободная тренировка (без программы)</button>
-  <h2>Прогрессия</h2><div class="card">${P.prog}</div>
-  <h2>Разгрузка</h2><div class="card">${P.deload}</div>
-  <h2>Важно</h2><div class="card"><ul>${P.notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>`;
+  const P=curProg(),nd=nextDayIdx(P),D=P.days[nd],doneToday=!!S.done[today()],target=P.freq,wc=Math.min(weekCount(),target),st=streak(),q=quoteOfDay(),w=weekInfo(P);
+  const dots=[...Array(target)].map((_,i)=>`<span style="opacity:${i<wc?1:.28}">●</span>`).join('');
+  const names=D.ex.slice(0,4).map(e=>exName(e.id)).join(' · ')+(D.ex.length>4?' …':'');
+  let main;
+  if(S.g)main=`<div class="card cta"><div class="hint">Ты в процессе</div><h1 style="margin:2px 0 8px">${guideDay(S.g).n}</h1><button class="btn xl" id="gresume">▶ Продолжить тренировку</button></div>`;
+  else if(doneToday)main=`<div class="card cta"><div style="font-size:40px">✅</div><h1 style="margin:4px 0">На сегодня всё!</h1><div class="hint">Мышцы растут на отдыхе. Следующая тренировка: <b style="color:var(--text)">${D.n}</b></div></div>`;
+  else main=`<div class="card cta"><div class="hint">Сегодня</div><h1 style="margin:2px 0 4px">${D.n}</h1>
+    <div class="hint">${D.ex.length} упражнений · около ${gDur({pid:P.id,di:nd})} минут</div><div class="hint" style="margin:6px 0 12px">${names}</div>
+    <button class="btn xl pulse" id="gstartnow" data-gstart="${nd}">▶ Начать тренировку</button>
+    <div class="hint" style="margin-top:8px;text-align:center">Я покажу, что делать, и подскажу вес. Ничего считать не нужно.</div></div>`;
+  return `<div class="row sb" style="margin:2px 0 8px"><b>${greeting()}</b><span class="flame">${st}🔥</span></div>
+  ${w.isDL?'<div class="warnbox" style="font-size:13px"><b>Лёгкая неделя.</b> Сегодня работаем полегче — так мышцы восстанавливаются и растут.</div>':''}
+  ${main}
+  <div class="card" style="text-align:center"><div class="hint">На этой неделе</div><div class="dots">${dots}</div><div class="hint">${wc} из ${target} тренировок</div></div>
+  <div class="quote">«${q[0]}»<div class="hint">${q[1]}</div></div>
+  <details class="card"><summary>📋 Весь курс «${P.name}»</summary>
+   ${P.days.map((d,di)=>`<div style="margin-top:10px"><b>${d.n}</b> <span class="hint">· ${d.focus}</span>
+    <div class="hint">${d.ex.map(e=>hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">${exName(e.id)}</a>`:exName(e.id)).join(' · ')}</div></div>`).join('')}</details>
+  <details class="card"><summary>ℹ️ О курсе</summary><p>${P.desc}</p><p class="hint"><b>Как растёт нагрузка:</b> ${P.prog}</p>
+   <button class="btn ghost small" id="pickprog">🔁 Другой курс</button></details>`;
 }
 function progLibrary(){
   const order=['beginner','advanced','pro'];
@@ -220,16 +222,6 @@ function bindBio(){
   };
 }
 
-/* ---------- Ещё: инструменты / добавки / здоровье ---------- */
-function moreScreen(){
-  const t=S.more||'tools';
-  const seg=`<div class="seg" id="moreseg">${[['tools','🧰 Инстр.'],['prog','📈 Прогресс'],['sup','💊 Спортпит'],['health','❤️ Здоровье']].map(([v,n])=>`<button data-v="${v}" class="${t===v?'on':''}">${n}</button>`).join('')}</div>`;
-  return seg+(t==='tools'?toolsScreen():t==='prog'?progScreen():t==='sup'?supScreen():healthScreen());
-}
-function bindMore(){
-  document.querySelectorAll('#moreseg button').forEach(b=>b.onclick=()=>{S.more=b.dataset.v;hap();render()});
-  const t=S.more||'tools';if(t==='tools')bindTools();if(t==='prog')bindProg();if(t==='health')bindHealth();
-}
 function toolsScreen(){
   return `<h1>Инструменты</h1>
   <div class="card"><b>🏋️ Расчёт 1ПМ</b><div class="logrow"><input id="t_w" type="number" inputmode="decimal" placeholder="Вес, кг"><input id="t_r" type="number" inputmode="numeric" placeholder="Повторы"></div>
@@ -409,4 +401,37 @@ function weeklyReport(){
   return `<div class="card"><b>📅 Итоги недели</b>
    <div class="stats" style="margin:8px 0"><div><b>${days[0].size}</b><span>тренировок</span></div><div><b>${(ton[0]/1000).toFixed(1)} т</b><span>тоннаж</span></div><div><b>${pr}</b><span>рекордов</span></div></div>
    <div class="hint">${diff==null?'':`К прошлой неделе: ${diff>=0?'▲':'▼'} ${Math.abs(diff)}% по тоннажу. `}${verdict}</div></div>`;
+}
+
+/* ---------- Простой старт: два вопроса ---------- */
+function startScreen(){
+  const o=S.ob||(S.ob={step:1});
+  if(o.step===1)return `<div class="hero"><div class="q">Давай начнём</div><div class="tr">Два вопроса — и твоя тренировка готова</div></div>
+   <h1>Какая у тебя цель?</h1>
+   ${[['mass','💪','Набрать мышцы'],['cut','🔥','Похудеть и подтянуться'],['strength','🏋️','Стать сильнее']].map(([v,i,t])=>`<button class="big" data-goal="${v}"><span>${i}</span>${t}</button>`).join('')}`;
+  return `<button class="back" id="obback">‹ Назад</button><h1>Какой у тебя опыт?</h1>
+   ${[['beginner','🌱','Только начинаю','Не тренировался или давно не ходил'],['advanced','🔥','Тренируюсь больше года','Знаю базовые упражнения'],['pro','🏆','Опытный атлет','Серьёзные веса, свой режим']].map(([v,i,t,d])=>`<button class="big" data-lvl="${v}"><span>${i}</span><div>${t}<small>${d}</small></div></button>`).join('')}`;
+}
+function bindStart(){
+  const o=S.ob||(S.ob={step:1});
+  document.querySelectorAll('[data-goal]').forEach(x=>x.onclick=()=>{o.goal=x.dataset.goal;o.step=2;hap();render()});
+  const bk=$('#obback');if(bk)bk.onclick=()=>{o.step=1;render()};
+  document.querySelectorAll('[data-lvl]').forEach(x=>x.onclick=()=>{
+    hap('medium');const lvl=x.dataset.lvl,days={beginner:3,advanced:4,pro:5}[lvl];
+    S.level=lvl;store.set('level',lvl);
+    S.prof.goal=o.goal==='cut'?'cut':o.goal==='mass'?'mass':'keep';store.set('prof',S.prof);
+    const p=recommend(o.goal,days,lvl)[0];S.prog=p.id;store.set('prog',p.id);store.set('pstart',{id:p.id,ts:Date.now()});store.set('onb',true);
+    S.ob=null;S.tab='plan';S.screen=null;toast('Твой курс готов');render()});
+}
+/* ---------- Меню «Ещё» ---------- */
+function moreScreen(){
+  const items=[['tech','🎬','Техника упражнений','3D-показ каждого упражнения'],['food','🥗','Питание','Сколько есть и что'],['sup','💊','Спортпит','Что работает, а что нет'],['bio','🧬','Восстановление и сон','Режим дня, готовность'],['mech','🧠','Как растут мышцы','Простыми словами и подробно'],['tools','🧰','Инструменты','Калькуляторы, таймер'],['health','❤️','Здоровье','Анализы и безопасность'],['change','🔁','Сменить цель или опыт','Подобрать курс заново']];
+  return `<h1>Ещё</h1>${items.map(([id,i,t,d])=>`<div class="card click row" data-go="${id}" style="gap:14px"><div style="font-size:28px">${i}</div><div><b>${t}</b><div class="hint">${d}</div></div></div>`).join('')}
+   <div class="card click row" id="freeopen" style="gap:14px"><div style="font-size:28px">✍️</div><div><b>Свободная тренировка</b><div class="hint">Записать подходы самому</div></div></div>`;
+}
+function bindMore(){
+  document.querySelectorAll('[data-go]').forEach(c=>c.onclick=()=>{hap();const id=c.dataset.go;
+    if(id==='change'){S.level=null;S.ob=null;render();return}
+    S.tab=id;render()});
+  const f=$('#freeopen');if(f)f.onclick=()=>{hap('medium');startFree()};
 }
