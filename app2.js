@@ -38,7 +38,7 @@ function planScreen(){
   if(S.g)main=`<div class="card cta"><div class="hint">Ты в процессе</div><h1 style="margin:2px 0 8px">${guideDay(S.g).n}</h1><button class="btn xl" id="gresume">▶ Продолжить тренировку</button></div>`;
   else if(doneToday)main=`<div class="card cta"><div style="font-size:40px">✅</div><h1 style="margin:4px 0">На сегодня всё!</h1><div class="hint">Мышцы растут на отдыхе. Следующая тренировка: <b style="color:var(--text)">${D.n}</b></div></div>`;
   else main=`<div class="card cta"><div class="hint">Сегодня</div><h1 style="margin:2px 0 4px">${D.n}</h1>
-    <div class="hint">${D.ex.length} упражнений · около ${gDur({pid:P.id,di:nd})} минут</div><div class="hint" style="margin:6px 0 12px">${names}</div>
+    <div class="hint">${D.ex.length} ${plural(D.ex.length,['упражнение','упражнения','упражнений'])} · около ${gDur({pid:P.id,di:nd})} минут</div><div class="hint" style="margin:6px 0 12px">${names}</div>
     <button class="btn xl pulse" id="gstartnow" data-gstart="${nd}">▶ Начать тренировку</button>
     <div class="hint" style="margin-top:8px;text-align:center">Я покажу, что делать, и подскажу вес. Ничего считать не нужно.</div></div>`;
   return `<div class="row sb" style="margin:2px 0 8px"><b>${greeting()}</b><span class="flame">${st}🔥</span></div>

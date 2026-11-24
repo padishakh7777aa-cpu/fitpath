@@ -4,11 +4,22 @@ const RATIO={squat:[.6,.9,1.2],bench:[.5,.8,1],deadlift:[.7,1.1,1.5],ohp:[.35,.5
 const BWEX=['pushup','plank','pullup','dips'];
 const lvI=()=>({beginner:0,advanced:1,pro:2}[S.level]||0);
 const r25=x=>Math.max(0,Math.round(x/2.5)*2.5);
+function plain(s){
+  return String(s||'').replace(/топ-сет/gi,'тяжёлый подход').replace(/back-off/gi,'облегчённый подход').replace(/RIR\s*([0-9–-]+)/g,'запас $1 повт.')
+    .replace(/дропсет\w*/gi,'подход со снижением веса').replace(/суперсет\w*/gi,'два упражнения подряд').replace(/Предутомление/gi,'Разогрев мышцы перед основным упражнением').replace(/ЦНС/g,'нервная система').replace(/\bAMRAP\b/gi,'максимум');
+}
+function blockReps(){const w=weekInfo(curProg()).wk;return w<=4?'6':w<=8?'4':'3'}
+function repsText(r){
+  let s=String(r);if(/по блоку/.test(s))s=blockReps();
+  s=s.split('@')[0].replace(/топ-сет|back-off/gi,'').replace(/макс(?!\w)/g,'максимум').replace(/\s+/g,' ').trim();
+  return s;
+}
 const fw=w=>(w%1===0?String(w):String(w).replace('.',','));
 
 function parseR(r){
   let s=String(r).split('@')[0].replace(/–/g,'-');const nums=s.match(/\d+/g)||[];
-  if(!nums.length||/по блоку/.test(r))return {lo:8,hi:10,timed:false,open:true};
+  if(/по блоку/.test(r)){const n=+blockReps();return {lo:n,hi:n,timed:false,open:false}}
+  if(!nums.length)return {lo:8,hi:10,timed:false,open:true};
   return {lo:+nums[0],hi:+nums[nums.length-1],timed:/сек/.test(r),open:/отказ|макс/.test(r)};
 }
 function suggestWeight(e,key){
@@ -115,10 +126,10 @@ function updateGuide(){
   setStage(exKey(D.ex[s.ei].id));gWork(g,D,steps,s);
 }
 function gIntro(g,D,steps){
-  $('#gbody').innerHTML=`<h1 style="margin:12px 0 4px">${D.n}</h1><div class="hint">${D.ex.length} упражнений · около ${gDur(g)} минут</div>
+  $('#gbody').innerHTML=`<h1 style="margin:12px 0 4px">${D.n}</h1><div class="hint">${D.ex.length} ${plural(D.ex.length,['упражнение','упражнения','упражнений'])} · около ${gDur(g)} минут</div>
   <button class="btn xl pulse" id="gstart" style="margin:12px 0">▶ Погнали!</button>
   <div class="card"><table>${D.ex.map((e,ei)=>{const w=g.base[ei],k=exKey(e.id),bw=BWEX.includes(k);
-    return `<tr><td><b>${exName(e.id)}</b><div class="hint">${e.s} подхода по ${e.r}</div></td><td style="text-align:right;white-space:nowrap">${bw?'вес тела':g.unk[ei]?'подберём':'<b>'+fw(w)+' кг</b>'}</td></tr>`}).join('')}</table></div>
+    return `<tr><td><b>${exName(e.id)}</b><div class="hint">${e.s} ${plural(e.s,['подход','подхода','подходов'])} по ${repsText(e.r)}</div></td><td style="text-align:right;white-space:nowrap">${bw?'вес тела':g.unk[ei]?'подберём':'<b>'+fw(w)+' кг</b>'}</td></tr>`}).join('')}</table></div>
   <div class="hint" style="text-align:center">Просто делай то, что показываю. Вес и отдых я подскажу.</div>`;
   $('#gstart').onclick=()=>{hap('medium');beep(880,.08);g.phase='step';store.set('gsess',g);updateGuide()};
 }
@@ -131,7 +142,8 @@ function gWork(g,D,steps,s){
   $('#gbody').innerHTML=`
    <div class="row sb" style="margin-top:12px"><h1 style="margin:0">${exName(e.id)}</h1><span class="tag ${warm?'warn':''}">${warm?'Разминка':`${s.si+1} из ${s.sets}`}</span></div>
    <div class="bigline" id="gbig">${unk?'Выбери вес':big()}</div>
-   <div class="hint" style="text-align:center">${warm?'Лёгкий подход для разогрева':`Сделай ${e.r} повторений. Остановись, когда останется ещё ${e.rir} в запасе.`}</div>
+   <div class="hint" style="text-align:center">${warm?'Лёгкий подход для разогрева':`${/отказ/.test(e.r)?'Делай '+repsText(e.r).replace(/\s*до отказа/,'')+' повторений, пока не почувствуешь, что почти предел — с хорошей техникой':'Сделай '+repsText(e.r)+' повторений. Остановись, когда останется ещё '+e.rir+' в запасе'}.`}</div>
+   ${e.note&&!warm?`<div class="hint" style="text-align:center;margin-top:4px">💡 ${plain(e.note)}</div>`:''}
    ${timed?`<div class="card" style="text-align:center"><div id="gtimer" style="font-family:Impact,sans-serif;font-size:64px;color:var(--accent)">${s.r}</div><button class="btn xl" id="gtstart">⏱ Старт</button></div>`:
    `<div class="gsteppers" id="gst" style="${unk?'':'display:none'}">
      <div class="gst"><span class="hint">${bw?'Добавить вес, кг':'Вес, кг'}</span><div><button data-d="w-2.5">−</button><b id="gw">${fw(g.cur.w)}</b><button data-d="w+2.5">+</button></div></div>
