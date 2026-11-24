@@ -8,6 +8,19 @@ function curProg(){let p=progById(S.prog);if(!p||false){p=PROGS.find(x=>x.lvl===
 const lastW=k=>{const a=S.log[k];return a&&a.length?a[a.length-1].w:''};
 
 /* ---------- План ---------- */
+const DELOAD={'b-full3':[5,9],'b-ul4':[6,12],'a-ul4':[5,10],'a-ppl6':[4,8],'a-arnold':[4,8],'a-pb5':[6,12],'p-heavy':[6,12],'p-hit':[7],'p-dup':[4,8,12],'p-spec':[7],'p-peak':[4,8,12]};
+function weekInfo(P){
+  let st=store.get('pstart',null);
+  if(!st||st.id!==P.id){st={id:P.id,ts:Date.now()};store.set('pstart',st)}
+  const wk=Math.floor((Date.now()-st.ts)/(7*864e5))+1,dl=DELOAD[P.id]||[],isDL=dl.includes(wk),next=dl.find(x=>x>wk);
+  return {wk,isDL,next,total:P.weeks};
+}
+function weekBanner(P){
+  const w=weekInfo(P);
+  if(w.isDL)return `<div class="warnbox"><b>⚠️ Неделя ${w.wk}: разгрузка</b><div class="hint" style="color:var(--text)">Сделай по 2 подхода на упражнение, вес −10%, запас повторов 3–4. Это не слабость: так мышцы и ЦНС восстанавливаются и растут дальше.</div></div>`;
+  return `<div class="card"><div class="row sb"><b>Неделя ${w.wk}${w.wk<=w.total?' из '+w.total:''}</b><span class="tag ${w.next&&w.next-w.wk<=1?'warn':''}">${w.next?'до разгрузки: '+(w.next-w.wk)+' нед':'цикл завершён — оцени прогресс'}</span></div>
+   <div style="height:6px;border-radius:3px;background:var(--line);margin-top:8px"><div style="height:6px;border-radius:3px;background:var(--accent);width:${Math.min(100,Math.round(w.wk/w.total*100))}%"></div></div></div>`;
+}
 function nextDayIdx(P){
   const ks=Object.keys(S.done).sort();if(!ks.length)return 0;
   const i=P.days.findIndex(d=>d.n===S.done[ks[ks.length-1]]);return i<0?0:(i+1)%P.days.length;
@@ -16,6 +29,7 @@ function planScreen(){
   if(S.progPick)return progLibrary();
   const P=curProg(),q=quoteOfDay(),target=P.freq,total=Object.keys(S.done).length,nd=nextDayIdx(P),doneToday=!!S.done[today()];
   return `<div class="hero"><div class="q">${q[0]}</div><div class="tr">${q[1]}</div></div>
+  ${weekBanner(P)}
   <div class="stats"><div><b>${weekCount()}/${target}</b><span>за неделю</span></div><div><b>${streak()}🔥</b><span>дней подряд</span></div><div><b>${total}</b><span>всего тренировок</span></div></div>
   <div class="card"><div class="row sb"><span class="tag">${LEVELS[P.lvl].name}</span><span class="hint">${P.freq} дн/нед · ${P.weeks} нед</span></div>
    <h1 style="margin:8px 0 2px">${P.name}</h1><div class="hint" style="color:var(--accent)">${P.tag}</div>
@@ -42,7 +56,7 @@ function bindPlan(){
   const pp=$('#pickprog');if(pp)pp.onclick=()=>{S.progPick=true;render()};
   const fp=$('#findprog');if(fp)fp.onclick=()=>{S.screen='onb';render()};
   const cl=$('#closelib');if(cl)cl.onclick=()=>{S.progPick=false;render()};
-  document.querySelectorAll('[data-pick]').forEach(c=>c.onclick=()=>{S.prog=c.dataset.pick;store.set('prog',S.prog);S.progPick=false;hap('medium');toast('Программа выбрана');render()});
+  document.querySelectorAll('[data-pick]').forEach(c=>c.onclick=()=>{S.prog=c.dataset.pick;store.set('prog',S.prog);store.set('pstart',{id:S.prog,ts:Date.now()});S.progPick=false;hap('medium');toast('Программа выбрана');render()});
   document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>{hap('medium');startSession(curProg().id,+b.dataset.start)});
   const r=$('#resume');if(r)r.onclick=()=>{S.screen='session';render()};
 }
@@ -53,6 +67,7 @@ function topReps(r){const n=String(r).replace(/–/g,'-').match(/\d+/g);if(!n||/
 function sessionScreen(){
   const ss=S.sess,P=progById(ss.pid),D=P.days[ss.di];
   return `<button class="back" id="sback">‹ К программе</button><h1>${D.n}</h1><div class="hint">${P.name} · <span id="elapsed">0:00</span></div>
+  ${weekInfo(P).isDL?'<div class="warnbox"><b>Неделя разгрузки</b>: 2 подхода на упражнение, вес −10%, запас повторов 3–4.</div>':''}
   ${warmupHtml(D)}
   ${D.ex.map((e,ei)=>{const k=exKey(e.id),lw=lastW(k);
    return `<div class="card"><div class="row sb"><b>${hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">▶ ${exName(e.id)}</a>`:exName(e.id)}</b><span class="tag">RIR ${e.rir}</span></div>
@@ -308,7 +323,7 @@ function bindOnb(){
     $('#ob_out').innerHTML=`<h2>Подходит тебе</h2>`+rec.map((p,i)=>`<div class="card click" data-pick2="${p.id}" ${i===0?'style="border-color:var(--accent)"':''}>
      <div class="row sb"><b>${p.name}</b>${i===0?'<span class="tag ok">лучший выбор</span>':''}</div><div class="hint" style="color:var(--accent)">${p.tag}</div>
      <div class="hint">${p.freq} дн/нед · ${p.weeks} нед · ${LEVELS[p.lvl].name}</div></div>`).join('');
-    document.querySelectorAll('[data-pick2]').forEach(c=>c.onclick=()=>{S.prog=c.dataset.pick2;store.set('prog',S.prog);store.set('onb',true);S.screen=null;S.tab='plan';hap('medium');toast('Программа выбрана');render()});
+    document.querySelectorAll('[data-pick2]').forEach(c=>c.onclick=()=>{S.prog=c.dataset.pick2;store.set('prog',S.prog);store.set('pstart',{id:S.prog,ts:Date.now()});store.set('onb',true);S.screen=null;S.tab='plan';hap('medium');toast('Программа выбрана');render()});
     $('#ob_out').scrollIntoView({behavior:'smooth'});
   };
 }
