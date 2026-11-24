@@ -1,27 +1,17 @@
-// Реалистичный персонаж (Mixamo-скелет) + анимации из FBX.
-// Чтобы сменить персонажа (например, Brute из Mixamo), положи файл в models/ и поправь MX.character.
-const MX={
-  enabled:false, // включается сам, если в models/ лежит character.fbx
-  character:'models/character.fbx',
-  clips:{}, // заполняется автоматически: models/<id упражнения>.fbx (squat, pushup, plank, deadlift, lunge, pullup, bench, ohp, row, rdl, curl, bridge, calf)
-  scale:1 // 1 = рост ~175 см; увеличь (1.05–1.12) для более массивного вида
-};
+// Реалистичный персонаж (Mixamo) в одном GLB с запечёнными анимациями.
+// Чтобы добавить упражнения: скачай анимацию из Mixamo (FBX, Without Skin) и запиши в models/manifest.json.
+const MX={enabled:false,character:'models/character.glb',clips:{},scale:1};
 function mxHas(key){return !!(MX.enabled&&window.THREE&&THREE.GLTFLoader&&MX.clips[key])}
-let _mxChar=null;const _mxClips={};
-function _load(L,url){return new Promise((res,rej)=>L.load(url,res,undefined,rej))}
-function mxCharacter(){
-  if(!_mxChar){
-    const fbx=/\.fbx$/i.test(MX.character);
-    _mxChar=_load(fbx?new THREE.FBXLoader():new THREE.GLTFLoader(),MX.character).then(o=>fbx?o:o.scene);
-  }
-  return _mxChar;
+let _mxG=null;
+function mxLoad(){
+  if(!_mxG)_mxG=new Promise((res,rej)=>new THREE.GLTFLoader().load(MX.character,res,undefined,rej));
+  return _mxG;
 }
-function mxClip(key){ // возвращает {clip, src}: клип и исходный скелет из FBX
-  if(!_mxClips[key])_mxClips[key]=_load(new THREE.FBXLoader(),MX.clips[key]).then(o=>({clip:o.animations[0],src:o}));
-  return _mxClips[key];
-}
+(async()=>{try{const r=await fetch('models/manifest.json');if(!r.ok)return;const m=await r.json();
+  (m.animations||[]).forEach(k=>MX.clips[k]=true);MX.enabled=Object.keys(MX.clips).length>0;}catch(e){}})();
 async function playerMx(wrap,key,opts={}){
-  const [root,clipInfo]=await Promise.all([mxCharacter(),mxClip(key)]);
+  const gltf=await mxLoad(),root=gltf.scene,clip0=gltf.animations.find(a=>a.name===key);
+  if(!clip0)throw new Error('no clip '+key);
   const T=THREE;
   const w=wrap.clientWidth||360,h=wrap.clientHeight||340;
   const renderer=makeRenderer(w,h,false);
@@ -48,15 +38,8 @@ async function playerMx(wrap,key,opts={}){
   const H=root.userData.H,k=(175*MX.scale)/H;
   holder.scale.setScalar(k);holder.rotation.y=Math.PI/2;
   holder.add(root);
-  // переносим анимацию на скелет персонажа (у Xbot другая исходная поза, поэтому retarget)
-  let sm=null;root.traverse(o=>{if(o.isSkinnedMesh&&!sm)sm=o});
-  let clip,animRoot=root;
-  if(!/\.fbx$/i.test(MX.character)&&sm&&T.SkeletonUtils&&clipInfo.src){
-    const bones=[];clipInfo.src.traverse(o=>{if(o.isBone)bones.push(o)});
-    clipInfo.src.updateMatrixWorld(true);
-    clip=T.SkeletonUtils.retargetClip(sm,new T.Skeleton(bones),clipInfo.clip,{hip:'mixamorigHips',useFirstFramePosition:true,scale:1});
-    animRoot=sm;
-  }else clip=clipInfo.clip;
+  const clip=clip0.clone();
+  const animRoot=root;
   const mixer=new T.AnimationMixer(animRoot),action=mixer.clipAction(clip);action.play();
   const D=clip.duration;
   const cam=new T.PerspectiveCamera(32,w/h,5,3000);
