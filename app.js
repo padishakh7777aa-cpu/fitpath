@@ -276,6 +276,12 @@ function healthScreen(){
 }
 function bindHealth(){const b=$('#age');if(b)b.onclick=()=>{S.age18=true;render()}}
 
+// восстановление 3D после «усыпления» видеоконтекста (сворачивание приложения)
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible'||!window.__ctxLost)return;
+  window.__ctxLost=false;
+  try{if(S.screen==='guide'&&S.g){if(typeof GD!=='undefined'){GD.key=null}updateGuide()}else if(S.ex||S.tab==='tech'){render()}}catch(e){}
+});
 // родная кнопка «Назад» Telegram
 function goBack(){
   if(S.screen==='guide'){const x=$('#gexit');if(x)x.click();return}

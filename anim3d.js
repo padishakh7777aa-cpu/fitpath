@@ -161,8 +161,22 @@ function Athlete3D(key,opts={}){
   return {scene,group,pose,holdAt,dispose(){scene.traverse(o=>{if(o.geometry)o.geometry.dispose()})}};
 }
 
+window.__ctxLost=false;
+// если кадры долго идут медленно — снижаем качество (разрешение и тени)
+function adaptQuality(renderer,scene,st,dt){
+  if(st._aq===undefined){st._aq=0;st._sum=0;st._n=0}
+  if(st._aq)return;
+  st._sum+=dt;st._n++;
+  if(st._n>=90){
+    if(st._sum/st._n>0.042){renderer.setPixelRatio(1);renderer.shadowMap.enabled=false;
+      scene.traverse(o=>{if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true)}});
+      renderer.setSize(renderer.domElement.clientWidth||300,renderer.domElement.clientHeight||300,false);}
+    st._aq=1;
+  }
+}
 function makeRenderer(w,h,thumb){
   const r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:!!thumb});
+  r.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();window.__ctxLost=true});
   r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));r.setSize(w,h);
   r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;r.outputColorSpace=THREE.SRGBColorSpace;
   r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.05;
@@ -201,6 +215,7 @@ function player3d(wrap,key,opts={}){
     if(st.spin){st.azT+=dt*.7}
     if(!st.drag)st.az+=(st.azT-st.az)*Math.min(1,dt*6);
     camFor(cam,key,st.az,st.pol,w/h);
+    adaptQuality(renderer,ath.scene,st,dt);
     renderer.render(ath.scene,cam);
     st.raf=requestAnimationFrame(loop);
   }

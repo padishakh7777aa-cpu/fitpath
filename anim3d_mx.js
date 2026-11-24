@@ -66,6 +66,7 @@ async function playerMx(wrap,key,opts={}){
     if(!st.drag)st.az+=(st.azT-st.az)*Math.min(1,dt*6);
     const d=(lowCam?330:300)*1.22*(w/h<1.2?1.12:1),ty=lowCam?45:90;
     cam.position.set(d*Math.sin(st.az)*Math.cos(st.pol),ty+d*Math.sin(st.pol),d*Math.cos(st.az)*Math.cos(st.pol));cam.lookAt(0,ty,0);
+    adaptQuality(renderer,scene,st,dt);
     renderer.render(scene,cam);
     st.raf=requestAnimationFrame(loop);
   }
