@@ -72,15 +72,3 @@ async function playerMx(wrap,key,opts={}){
   st.stop=()=>{cancelAnimationFrame(st.raf);holder.remove();mixer.stopAllAction();renderer.dispose();try{renderer.forceContextLoss()}catch(e){}cv.remove()};
   return st;
 }
-
-// Автообнаружение: если есть models/character.fbx — включаем реалистичного персонажа и найденные анимации
-(async()=>{
-  try{
-    const big=async u=>{const r=await fetch(u,{method:'HEAD'});return r.ok&&(+r.headers.get('content-length')||1e6)>50000};
-    if(!(await big(MX.character)))return;
-    const keys=Object.keys(EX);
-    const ok=await Promise.all(keys.map(k=>big(`models/${k}.fbx`).catch(()=>false)));
-    keys.forEach((k,i)=>{if(ok[i])MX.clips[k]=`models/${k}.fbx`});
-    MX.enabled=Object.keys(MX.clips).length>0;
-  }catch(e){}
-})();
