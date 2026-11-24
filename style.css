@@ -146,3 +146,4 @@ button.big:active{transform:scale(.98);border-color:var(--accent)}
 .quote .hint{font-family:-apple-system,system-ui,sans-serif;font-style:normal;text-transform:none;font-size:12px}
 .bigline{text-align:center;font-family:Impact,Haettenschweiler,sans-serif;font-size:46px;color:var(--accent);margin:10px 0 2px;letter-spacing:1px}
 .lnk{color:var(--hint);font-size:13px;text-decoration:underline}
+.tag{white-space:nowrap}

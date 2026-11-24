@@ -98,7 +98,7 @@ async function setStage(key){
   const wrap=$('#gstage');if(!wrap)return;
   [...wrap.querySelectorAll('canvas,svg,.gph')].forEach(n=>n.remove());
   const ph=$('#gph'),e=EX[key];
-  if(!e){ph.textContent='';const d=document.createElement('div');d.className='gph';d.style.cssText='position:absolute;inset:0;display:grid;place-items:center;font-size:56px';d.textContent='🏋️';wrap.appendChild(d);return}
+  if(!e){const tx=txFor(key),d=document.createElement('div');ph.textContent='';d.className='gph';d.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;text-align:center;padding:12px';d.innerHTML='<div style="font-size:56px">🏋️</div>'+(tx?'<div class="tag warn">'+tx.m+'</div>':'');wrap.appendChild(d);return}
   ph.textContent=e.phases[0];
   const period=key==='plank'?5:3.6;let pl=null;
   try{if(has3D()&&typeof mxHas==='function'){if(MX.ready)await MX.ready;
@@ -151,6 +151,7 @@ function gWork(g,D,steps,s){
    ${unk?`<div class="hint" style="margin:4px 0 8px">Не знаю твой стартовый вес. Подбери такой, чтобы закончить с запасом — дальше я запомню.</div>`:''}
    <button class="btn xl" id="gdone">✔ Сделал</button>
    ${unk?'':'<div style="text-align:center;margin-top:8px"><a href="#" id="gedit" class="lnk">Изменить вес или повторы</a></div>'}`}
+   ${(!ex&&!warm&&txFor(k))?`<details class="card" open><summary>📖 Как делать правильно</summary><ol style="padding-left:20px;margin:8px 0">${txFor(k).s.map(x=>`<li>${x}</li>`).join('')}</ol></details>`:''}
    ${ex&&!warm?`<details class="card"><summary>📖 Как делать правильно</summary><ol style="padding-left:20px;margin:8px 0">${ex.steps.map(x=>`<li>${x}</li>`).join('')}</ol><div>${ex.mistakes.map(m=>`<span class="tag bad">${m}</span>`).join('')}</div></details>`:''}
    <div style="text-align:center;margin-top:10px"><a href="#" id="gskip" class="lnk">Пропустить упражнение</a></div>`;
   const cur=g.cur,gb=$('#gbig');
