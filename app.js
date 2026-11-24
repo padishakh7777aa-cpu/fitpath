@@ -122,7 +122,7 @@ function bindEx(k){
     const w=parseFloat($('#lw').value),r=parseInt($('#lr').value);
     if(!(w>=0)||!(r>0)){toast('Введи вес и повторы');return}
     const a=S.log[k]||(S.log[k]=[]);const prev=a.reduce((m,x)=>Math.max(m,x.w),0);
-    a.push({d:today().slice(5),w,r});store.set('log',S.log);hap('medium');
+    a.push({d:today().slice(5),ts:Date.now(),w,r});store.set('log',S.log);hap('medium');
     $('#hist').innerHTML=histHtml(k);
     toast(w>prev&&prev>0?'Новый рекорд! Yeah buddy!':'Light weight!');
   };

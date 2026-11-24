@@ -87,7 +87,7 @@ function finishSession(){
     const done=[];for(let si=0;si<e.s;si++){const d=ss.sets[ei+'_'+si];if(d&&d.done)done.push(d)}
     if(!done.length)return;sets+=done.length;
     const k=exKey(e.id),a=S.log[k]||(S.log[k]=[]);
-    done.forEach(d=>{tonnage+=d.w*d.r;a.push({d:today().slice(5),w:d.w,r:d.r,p:P.id})});
+    done.forEach(d=>{tonnage+=d.w*d.r;a.push({d:today().slice(5),ts:Date.now(),w:d.w,r:d.r,p:P.id})});
     const tr=topReps(e.r),allTop=tr&&done.length>=e.s&&done.every(d=>d.r>=tr);
     if(allTop)sug.push(`${exName(e.id)} → +2,5 кг (изоляция +1–2 кг)`);
   });
@@ -183,12 +183,12 @@ function bindBio(){
 /* ---------- Ещё: инструменты / добавки / здоровье ---------- */
 function moreScreen(){
   const t=S.more||'tools';
-  const seg=`<div class="seg" id="moreseg">${[['tools','🧰 Инструменты'],['sup','💊 Спортпит'],['health','❤️ Здоровье']].map(([v,n])=>`<button data-v="${v}" class="${t===v?'on':''}">${n}</button>`).join('')}</div>`;
-  return seg+(t==='tools'?toolsScreen():t==='sup'?supScreen():healthScreen());
+  const seg=`<div class="seg" id="moreseg">${[['tools','🧰 Инстр.'],['prog','📈 Прогресс'],['sup','💊 Спортпит'],['health','❤️ Здоровье']].map(([v,n])=>`<button data-v="${v}" class="${t===v?'on':''}">${n}</button>`).join('')}</div>`;
+  return seg+(t==='tools'?toolsScreen():t==='prog'?progScreen():t==='sup'?supScreen():healthScreen());
 }
 function bindMore(){
   document.querySelectorAll('#moreseg button').forEach(b=>b.onclick=()=>{S.more=b.dataset.v;hap();render()});
-  const t=S.more||'tools';if(t==='tools')bindTools();if(t==='health')bindHealth();
+  const t=S.more||'tools';if(t==='tools')bindTools();if(t==='prog')bindProg();if(t==='health')bindHealth();
 }
 function toolsScreen(){
   return `<h1>Инструменты</h1>
@@ -212,4 +212,54 @@ function bindTools(){
     $('#p_out').innerHTML=`<p style="margin-top:10px">На каждую сторону: <b>${out.join(' + ')||'—'}</b></p>${side>0.01?`<div class="hint">Остаток ${(side*2).toFixed(2)} кг не набирается блинами.</div>`:''}`;hap('medium');
   };
   document.querySelectorAll('#t_rest button').forEach(b=>b.onclick=()=>{startRest(+b.dataset.s);hap()});
+}
+
+/* ---------- Прогресс ---------- */
+const e1rm=(w,r)=>w*(1+Math.min(r,12)/30);
+function lineChart(pts,opt={}){
+  if(pts.length<2)return '<div class="hint" style="padding:14px 0">Нужно минимум 2 записи, чтобы построить график.</div>';
+  const W=340,H=130,P=26,xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),dy=(y1-y0)||1;
+  const X=x=>P+(W-P-8)*((x-x0)/((x1-x0)||1)),Y=y=>H-18-(H-34)*((y-(y0-dy*.1))/(dy*1.2));
+  const d=pts.map((p,i)=>(i?'L':'M')+X(p.x).toFixed(1)+','+Y(p.y).toFixed(1)).join(' ');
+  const area=d+` L${X(x1).toFixed(1)},${H-18} L${X(x0).toFixed(1)},${H-18} Z`;
+  const last=pts[pts.length-1],first=pts[0],diff=last.y-first.y;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5b301" stop-opacity=".35"/><stop offset="1" stop-color="#f5b301" stop-opacity="0"/></linearGradient></defs>
+  <path d="${area}" fill="url(#lg)"/><path d="${d}" fill="none" stroke="#f5b301" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  ${pts.map(p=>`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3" fill="#f5b301"/>`).join('')}
+  <text x="${P}" y="12" fill="#9a968a" font-size="10">${y1.toFixed(1)}</text><text x="${P}" y="${H-22}" fill="#9a968a" font-size="10">${y0.toFixed(1)}</text>
+  <text x="${P}" y="${H-4}" fill="#9a968a" font-size="10">${first.l||''}</text><text x="${W-8}" y="${H-4}" fill="#9a968a" font-size="10" text-anchor="end">${last.l||''}</text></svg>
+  <div class="hint">${diff>=0?'▲':'▼'} ${Math.abs(diff).toFixed(1)} ${opt.unit||''} с первой записи</div>`;
+}
+function barChart(vals,labels){
+  if(!vals.length||Math.max(...vals)===0)return '<div class="hint" style="padding:14px 0">Пока нет данных по тоннажу. Заверши хотя бы одну тренировку.</div>';
+  const W=340,H=120,m=Math.max(...vals),bw=(W-20)/vals.length;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${vals.map((v,i)=>{const h=(H-30)*v/m;
+   return `<rect x="${10+i*bw+4}" y="${H-18-h}" width="${bw-8}" height="${h}" rx="4" fill="${i===vals.length-1?'#f5b301':'#8a6a10'}"/><text x="${10+i*bw+bw/2}" y="${H-4}" fill="#9a968a" font-size="9" text-anchor="middle">${labels[i]}</text>${v?`<text x="${10+i*bw+bw/2}" y="${H-22-h}" fill="#f4f1e8" font-size="9" text-anchor="middle">${(v/1000).toFixed(1)}т</text>`:''}`}).join('')}</svg>`;
+}
+function weekStart(ts){const d=new Date(ts);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()}
+function progScreen(){
+  const bw=S.bw||(S.bw=store.get('bw',{}));
+  const bwPts=Object.keys(bw).sort().map(d=>({x:new Date(d).getTime(),y:bw[d],l:d.slice(5)}));
+  const keys=Object.keys(S.log).filter(k=>(S.log[k]||[]).length);
+  const sel=S.progEx&&keys.includes(S.progEx)?S.progEx:keys[0];
+  S.progEx=sel;
+  const exPts=sel?(()=>{const by={};S.log[sel].forEach((e,i)=>{const t=e.ts||i;const key=e.d+'|'+(e.ts?'':i);const v=e1rm(e.w,e.r);if(!by[e.d]||v>by[e.d].y)by[e.d]={x:Object.keys(by).length,y:v,l:e.d}});return Object.values(by)})():[];
+  const now=Date.now(),ws=weekStart(now),weeks=[...Array(8)].map((_,i)=>ws-(7-i)*7*864e5),vol=weeks.map(()=>0);
+  Object.values(S.log).forEach(a=>a.forEach(e=>{if(!e.ts)return;const w=weekStart(e.ts),i=weeks.indexOf(w);if(i>=0)vol[i]+=e.w*e.r}));
+  const lab=weeks.map(w=>{const d=new Date(w);return d.getDate()+'.'+String(d.getMonth()+1).padStart(2,'0')});
+  const lastBw=bwPts.length?+bwPts[bwPts.length-1].y.toFixed(1):'';
+  return `<h1>Прогресс</h1>
+  <div class="card"><b>⚖️ Вес тела</b>
+   <div class="logrow"><input id="bw_in" type="number" inputmode="decimal" step="0.1" placeholder="Вес сегодня, кг" value=""><button class="btn small" id="bw_save" style="width:auto">Записать</button></div>
+   ${lineChart(bwPts,{unit:'кг'})}${lastBw?`<div class="hint">Последняя запись: ${lastBw} кг. Смотри тренд по неделе, а не отдельный день.</div>`:''}</div>
+  <div class="card"><b>💪 Сила по упражнению (расчётный 1ПМ)</b>
+   ${keys.length?`<select id="pg_ex" style="margin:8px 0">${keys.map(k=>`<option value="${k}" ${k===sel?'selected':''}>${exName(k)}</option>`).join('')}</select>${lineChart(exPts,{unit:'кг'})}`:'<div class="hint" style="padding:10px 0">Заверши тренировку или запиши подход в карточке упражнения, и здесь появится график силы.</div>'}</div>
+  <div class="card"><b>📊 Недельный тоннаж</b><div class="hint">Сумма вес × повторы за неделю, последние 8 недель.</div>${barChart(vol,lab)}</div>
+  <div class="hint">Данные хранятся на твоём устройстве. 1ПМ — расчёт по формуле Эпли, ориентир, а не тест.</div>`;
+}
+function bindProg(){
+  const s=$('#bw_save');if(s)s.onclick=()=>{const v=parseFloat($('#bw_in').value);if(!(v>20&&v<400)){toast('Введи вес в кг');return}
+    const bw=S.bw||(S.bw=store.get('bw',{}));bw[today()]=v;store.set('bw',bw);hap('medium');toast('Записано');render()};
+  const e=$('#pg_ex');if(e)e.onchange=()=>{S.progEx=e.value;render()};
 }
