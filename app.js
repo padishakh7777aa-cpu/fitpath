@@ -188,52 +188,56 @@ function mealPlan(r,variant){
     return {n,items:[`${pg} г ${pf[0]}`,`${cg} г ${cf[0]}`,...(fg?[`${fg} г ${ff[0]}`]:[]),'овощи / зелень без ограничений'],f};
   });
 }
+const GOALN={mass:'набор массы',cut:'похудение',keep:'поддержание формы'};
+function mySupps(){
+  const g=S.prof.goal,pick={
+    mass:[['Креатин','5 г в день, в любое время','Больше силы и мышечной массы. Самая изученная добавка.'],['Протеин','1 порция (25–30 г), если не хватает белка из еды','Просто удобный источник белка, не обязателен.'],['Углеводы до тренировки','банан, рис или овсянка за 2–3 часа','Больше энергии на тяжёлые подходы.']],
+    cut:[['Протеин','1 порция (25–30 г) вместо перекуса','Помогает не терять мышцы и меньше хотеть есть.'],['Креатин','5 г в день','Сохраняет силу на дефиците калорий.'],['Кофеин','чашка кофе за 30–40 минут до тренировки','Больше бодрости. Не пей после обеда.']],
+    keep:[['Креатин','5 г в день','Сила и восстановление.'],['Омега-3','1–2 г в день с едой','Для сердца и суставов.'],['Витамин D','по анализу, обычно 1000–2000 МЕ осенью и зимой','Иммунитет и настроение.']]
+  };
+  if(S.level==='pro'&&g!=='cut')pick[g==='mass'?'mass':'keep'].splice(2,1,['Кофеин','3–6 мг на кг веса за 30–60 минут до тренировки','Работоспособность. Не после 15:00.']);
+  return pick[g]||pick.keep;
+}
 function foodScreen(){
-  const p=S.prof,r=calcNutrition(p),v=S.meal||0;
-  const lvlTips={
-    beginner:['Без сложных схем: тарелка = ½ овощи, ¼ белок, ¼ крупы.','Белок в каждый приём пищи, 3–4 приёма в день.','Сладкие напитки и фастфуд — максимум 1–2 раза в неделю.'],
-    advanced:['Распредели белок на 3–5 приёмов по 25–40 г.','Углеводы концентрируй вокруг тренировки (за 2–3 ч до и после).','Раз в 2–3 недели при сушке — 1–2 дня на поддержании калорий.'],
-    pro:['Перерывы в диете: 1–2 недели на поддержании через каждые 8–12 недель дефицита.','Рефиды с углеводами 1–2 раза в неделю при глубокой сушке.','Скорость изменения веса: набор 0,25–0,5%/нед., сушка 0,5–1%/нед.']
-  }[S.level];
-  const mp=mealPlan(r,v);
-  return `<h1>Питание под цель</h1>
-  <div class="card">
-    <label>Цель</label>
-    <div class="seg" id="goal">${[['mass','Набор массы'],['cut','Похудение'],['keep','Поддержание']].map(([x,t])=>`<button data-v="${x}" class="${p.goal===x?'on':''}">${t}</button>`).join('')}</div>
-    <div class="grid2"><div><label>Пол</label><select id="sex"><option value="m" ${p.sex==='m'?'selected':''}>Мужской</option><option value="f" ${p.sex==='f'?'selected':''}>Женский</option></select></div>
-    <div><label>Возраст</label><input id="age" type="number" value="${p.age}"></div>
-    <div><label>Вес, кг</label><input id="w" type="number" value="${p.w}"></div>
-    <div><label>Рост, см</label><input id="h" type="number" value="${p.h}"></div></div>
-    <label>Активность</label><select id="act">${[[1.2,'Сидячий образ жизни'],[1.375,'1–3 тренировки в неделю'],[1.55,'3–5 тренировок в неделю'],[1.725,'6–7 тренировок в неделю']].map(([x,t])=>`<option value="${x}" ${p.act==x?'selected':''}>${t}</option>`).join('')}</select>
-  </div>
-  <div class="card"><div class="row sb"><b>Твой план на день</b><span class="hint">BMR ${r.bmr} · TDEE ${r.tdee}</span></div>
-    <div class="macro"><div><b>${r.kcal}</b><span>ккал</span></div><div><b>${r.prot} г</b><span>белки</span></div><div><b>${r.fat} г</b><span>жиры</span></div><div><b>${r.carb} г</b><span>углеводы</span></div></div>
-    <div class="hint">Вода ≈ ${r.water} л в день. Дефицит/профицит подобран под твой уровень.</div></div>
-  <div class="row sb"><h2>Готовое меню на день</h2><button class="btn small ghost" id="shuffle">🔀 Другое</button></div>
-  <div class="card meal"><table>${mp.map(m=>`<tr><td><b>${m.n}</b><div class="hint">≈ ${Math.round(r.kcal*m.f)} ккал</div></td><td>${m.items.map(i=>`• ${i}`).join('<br>')}</td></tr>`).join('')}</table>
-  <div class="hint" style="margin-top:6px">Веса указаны в сыром/сухом виде. Меню подгоняется под твои калории и БЖУ.</div></div>
-  <h2>Что выбирать</h2>
-  <div class="card"><b>Белок</b><div class="hint">Курица, индейка, говядина, рыба, яйца, творог, греческий йогурт, тофу, бобовые.</div>
-  <b>Сложные углеводы</b><div class="hint">Гречка, рис, овсянка, цельнозерновой хлеб, картофель, макароны твёрдых сортов, фрукты.</div>
-  <b>Полезные жиры</b><div class="hint">Оливковое масло, орехи, авокадо, жирная рыба, семена.</div></div>
-  <h2>Советы для уровня</h2><div class="card"><ul>${lvlTips.map(t=>`<li>${t}</li>`).join('')}</ul></div>
-  <h2>Режим дня</h2><div class="card"><table>
-    <tr><td>07:30</td><td>Завтрак + вода 500 мл</td></tr><tr><td>12:30</td><td>Обед (белок + сложные углеводы)</td></tr>
-    <tr><td>за 2 ч до</td><td>Основной приём пищи перед тренировкой</td></tr><tr><td>за 30 мин</td><td>Кофеин (по желанию, п. «Добавки»)</td></tr>
-    <tr><td>после</td><td>Белок 25–40 г + углеводы</td></tr><tr><td>22:30</td><td>Сон 7–9 часов</td></tr></table></div>
-  <div class="hint">Взвешивайся утром, смотри среднее по неделе: нет динамики — меняй калории на 5–10%. При заболеваниях и беременности — только после врача.</div>`;
+  const p=S.prof;
+  if(!p.set){
+    return `<div class="hero"><div class="q">Посчитаем питание</div><div class="tr">Один раз введи 4 цифры — дальше всё готово</div></div>
+    <div class="card"><label>Пол</label><div class="seg" id="sexseg"><button data-v="m" class="${p.sex==='m'?'on':''}">Мужской</button><button data-v="f" class="${p.sex==='f'?'on':''}">Женский</button></div>
+     <div class="grid2"><div><label>Возраст</label><input id="age" type="number" inputmode="numeric" value="${p.age}"></div><div><label>Вес, кг</label><input id="w" type="number" inputmode="decimal" value="${p.w}"></div></div>
+     <label>Рост, см</label><input id="h" type="number" inputmode="numeric" value="${p.h}">
+     <button class="btn xl" id="calc" style="margin-top:14px">Рассчитать</button></div>`;
+  }
+  const r=calcNutrition(p),v=S.meal||0,mp=mealPlan(r,v);
+  const tips={beginner:['Белок в каждый приём пищи: мясо, рыба, яйца, творог.','Пей воду весь день: около '+r.water+' л.','Сладкое и фастфуд — редко, не каждый день.'],
+    advanced:['Раздели белок на 3–5 приёмов по 25–40 г.','Основные углеводы ешь за 2–3 часа до и после тренировки.','Взвешивайся утром и смотри среднее за неделю.'],
+    pro:['Следи за средним весом за неделю: набор 0,25–0,5%, сушка 0,5–1% в неделю.','Каждые 8–12 недель дефицита делай 1–2 недели на поддержании.','Углеводы концентрируй вокруг тренировок.']}[S.level];
+  return `<div class="card cta"><div class="hint">Твоя норма на день · ${GOALN[p.goal]}</div>
+   <h1 style="margin:2px 0 8px">${r.kcal} ккал</h1>
+   <div class="macro"><div><b>${r.prot} г</b><span>белки</span></div><div><b>${r.fat} г</b><span>жиры</span></div><div><b>${r.carb} г</b><span>углеводы</span></div></div>
+   <div class="hint">Вода: около ${r.water} л в день</div></div>
+  <div class="row sb"><h2 style="margin:0">Что съесть сегодня</h2><button class="btn small ghost" id="shuffle">🔀 Другое</button></div>
+  <div class="card meal"><table>${mp.map(m=>`<tr><td><b>${m.n}</b></td><td>${m.items.filter(x=>!/овощи/.test(x)).map(i=>`• ${i}`).join('<br>')}</td></tr>`).join('')}</table>
+   <div class="hint" style="margin-top:6px">Вес указан в сыром или сухом виде. Добавляй овощи без ограничений.</div></div>
+  <h2>Просто о питании</h2><div class="card"><ul>${tips.map(t=>`<li>${t}</li>`).join('')}</ul></div>
+  <h2>Спортпит для тебя</h2>${mySupps().map(s=>`<div class="sup"><b>${s[0]}</b><div>${s[1]}</div><div class="hint">${s[2]}</div></div>`).join('')}
+  <div class="hint" style="margin:6px 0"><a href="#" id="allsup" class="lnk">Весь список добавок и что не нужно</a></div>
+  <details class="card"><summary>⚙️ Уточнить расчёт</summary>
+   <label>Цель</label><div class="seg" id="goal">${[['mass','Набор массы'],['cut','Похудение'],['keep','Форма']].map(([x,t])=>`<button data-v="${x}" class="${p.goal===x?'on':''}">${t}</button>`).join('')}</div>
+   <label>Сколько тренируешься</label><select id="act">${[[1.2,'Почти не двигаюсь'],[1.375,'1–3 тренировки в неделю'],[1.55,'3–5 тренировок в неделю'],[1.725,'6–7 тренировок в неделю']].map(([x,t])=>`<option value="${x}" ${p.act==x?'selected':''}>${t}</option>`).join('')}</select>
+   <div class="grid2"><div><label>Возраст</label><input id="age" type="number" value="${p.age}"></div><div><label>Вес, кг</label><input id="w" type="number" value="${p.w}"></div></div>
+   <label>Рост, см</label><input id="h" type="number" value="${p.h}"></details>
+  <div class="hint">Это ориентир на 2–3 недели. Если вес не меняется, поменяй калории на 5–10%. При болезнях и беременности — только после врача.</div>`;
 }
 function bindFood(){
-  const upd=()=>{
-    const p=S.prof;
-    p.sex=$('#sex').value;p.age=+$('#age').value||25;p.w=+$('#w').value||70;p.h=+$('#h').value||170;p.act=+$('#act').value;
-    store.set('prof',p);
-    const scroll=window.scrollY;
-    $('#view').innerHTML=foodScreen();bindFood();window.scrollTo(0,scroll);
-  };
-  document.querySelectorAll('#goal button').forEach(b=>b.onclick=()=>{S.prof.goal=b.dataset.v;store.set('prof',S.prof);hap();$('#view').innerHTML=foodScreen();bindFood()});
-  $('#shuffle').onclick=()=>{S.meal=((S.meal||0)+1)%6;hap();const sc=window.scrollY;$('#view').innerHTML=foodScreen();bindFood();window.scrollTo(0,sc)};
-  ['sex','act','age','w','h'].forEach(i=>$('#'+i).onchange=upd);
+  const read=()=>{const p=S.prof;p.age=+$('#age').value||25;p.w=+$('#w').value||70;p.h=+$('#h').value||170;const ac=$('#act');if(ac)p.act=+ac.value;store.set('prof',p)};
+  const redraw=()=>{const sc=window.scrollY;$('#view').innerHTML=foodScreen();bindFood();window.scrollTo(0,sc)};
+  const c=$('#calc');
+  if(c){document.querySelectorAll('#sexseg button').forEach(b=>b.onclick=()=>{S.prof.sex=b.dataset.v;document.querySelectorAll('#sexseg button').forEach(x=>x.classList.toggle('on',x===b));hap()});
+    c.onclick=()=>{read();S.prof.set=true;store.set('prof',S.prof);hap('medium');redraw()};return}
+  document.querySelectorAll('#goal button').forEach(b=>b.onclick=()=>{S.prof.goal=b.dataset.v;store.set('prof',S.prof);hap();redraw()});
+  ['act','age','w','h'].forEach(i=>{const e=$('#'+i);if(e)e.onchange=()=>{read();redraw()}});
+  const sh=$('#shuffle');if(sh)sh.onclick=()=>{S.meal=((S.meal||0)+1)%6;hap();redraw()};
+  const as=$('#allsup');if(as)as.onclick=e=>{e.preventDefault();S.tab='sup';render()};
 }
 
 /* ---------- Добавки ---------- */
