@@ -27,13 +27,15 @@ async function playerMx(wrap,key,opts={}){
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
   const ring=new T.Mesh(new T.RingGeometry(168,172,96),new T.MeshBasicMaterial({color:0xf5b301,transparent:true,opacity:.55,side:T.DoubleSide}));
   ring.rotation.x=-Math.PI/2;ring.position.y=.2;scene.add(ring);
+  const key1=new T.DirectionalLight(0xffffff,1.6);key1.position.set(120,180,320);scene.add(key1);
+  const fill=new T.DirectionalLight(0x9fb4ff,.9);fill.position.set(-200,120,200);scene.add(fill);
   // персонаж: нормализуем рост и единицы анимации
   const holder=new T.Group();scene.add(holder);
   if(!root.userData.mxPrepared){
     root.updateMatrixWorld(true);
     const box=new T.Box3().setFromObject(root),H=box.max.y-box.min.y;
     root.userData.H=H;root.userData.mxPrepared=true;
-    root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false}});
+    root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{m.color.setRGB(2.4,2.4,2.6);m.roughness=.5;if(m.emissive)m.emissiveIntensity=0;m.emissiveMap=null;m.needsUpdate=true})}});
   }
   const H=root.userData.H,k=(175*MX.scale)/H;
   holder.scale.setScalar(k);holder.rotation.y=Math.PI/2;
