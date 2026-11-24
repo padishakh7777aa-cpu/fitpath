@@ -23,9 +23,9 @@ function Athlete3D(key,opts={}){
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
   const ring=new T.Mesh(new T.RingGeometry(168,172,96),new T.MeshBasicMaterial({color:GOLD,transparent:true,opacity:.55,side:T.DoubleSide}));
   ring.rotation.x=-Math.PI/2;ring.position.y=.2;scene.add(ring);
-  const mat=(c,r=.55,m=0)=>new T.MeshStandardMaterial({color:c,roughness:r,metalness:m});
+  const mat=(c,r=.55,m=0)=>new T.MeshPhysicalMaterial({color:c,roughness:r,metalness:m,clearcoat:.35,clearcoatRoughness:.5});
   const SKIN=0xa9714a; // тёмный загар
-  const skinFor={};const skin=g=>skinFor[g]||(skinFor[g]=mat(SKIN,.5));
+  const skinFor={};const skin=g=>skinFor[g]||(skinFor[g]=mat(SKIN,.42));
   const shorts=mat(0x0c0c10,.7),gold=mat(GOLD,.35,.6),hairM=mat(0x0a0a0a,.9),shoeM=mat(0xf2f2f5,.5),shoeD=mat(0x111115,.6),steel=mat(0xb9bfca,.3,.9),plateM=mat(0x16161c,.4,.5);
   const add=(m,g)=>{m.castShadow=true;m.receiveShadow=false;(g||group).add(m);return m};
   const seg=(r1,r2,m,g)=>{const geo=new T.CylinderGeometry(r2,r1,1,22,1);geo.translate(0,.5,0);return add(new T.Mesh(geo,m),g)};
@@ -35,16 +35,16 @@ function Athlete3D(key,opts={}){
 
   // --- сегменты тела
   const S=[-1,1];
-  const thighS=S.map(()=>seg(11.8,7.6,skin('legs'))),shinS=S.map(()=>seg(7.6,4.6,skin('legs'))),
-        kneeS=S.map(()=>ball(7,skin('legs'))),calfS=S.map(()=>ball(6.4,skin('legs'),1,1.5,1)),
-        shortS=S.map(()=>seg(12.6,11,shorts)),footS=S.map(()=>seg(5.2,4.6,shoeM)),toeS=S.map(()=>ball(5,shoeM,1,.9,1)),soleS=S.map(()=>seg(5.4,4.9,shoeD)),
-        uarmS=S.map(()=>seg(6.6,5.2,skin('arms'))),farmS=S.map(()=>seg(5.4,3.9,skin('arms'))),
-        elbS=S.map(()=>ball(5,skin('arms'))),bicS=S.map(()=>ball(6,skin('arms'),1.1,1.6,1)),handS=S.map(()=>ball(4.6,skin('arms'),1,1.1,.9)),
-        deltS=S.map(()=>ball(9,skin('shoulders'))),
+  const thighS=S.map(()=>seg(14,8.6,skin('legs'))),shinS=S.map(()=>seg(8.4,5,skin('legs'))),
+        kneeS=S.map(()=>ball(8,skin('legs'))),calfS=S.map(()=>ball(7.8,skin('legs'),1,1.6,1)),
+        shortS=S.map(()=>seg(15,12.5,shorts)),footS=S.map(()=>seg(5.2,4.6,shoeM)),toeS=S.map(()=>ball(5,shoeM,1,.9,1)),soleS=S.map(()=>seg(5.4,4.9,shoeD)),
+        uarmS=S.map(()=>seg(8.2,6,skin('arms'))),farmS=S.map(()=>seg(6.8,4.6,skin('arms'))),
+        elbS=S.map(()=>ball(6,skin('arms'))),bicS=S.map(()=>ball(8,skin('arms'),1.15,1.7,1.05)),handS=S.map(()=>ball(5,skin('arms'),1,1.1,.9)),
+        deltS=S.map(()=>ball(11.5,skin('shoulders'))),
         pecS=S.map(()=>ball(1,skin('chest'))),
         absS=[0,1,2].map(()=>S.map(()=>ball(1,skin('abs'))));
   const pelvis=ball(1,shorts),lats=ball(1,skin('back')),chestB=ball(1,skin('chest')),waist=ball(1,skin('abs')),trap=ball(1,skin('back'));
-  const neck=seg(6.2,5.6,skin('shoulders')),head=ball(10.6,mat(SKIN,.5),1.02,1.12,.92),hair=add(new T.Mesh(new T.SphereGeometry(11,24,14,0,Math.PI*2,0,Math.PI*.52),hairM));
+  const neck=seg(8,7.2,skin('shoulders')),head=ball(10,mat(SKIN,.45),1.02,1.12,.92),hair=add(new T.Mesh(new T.SphereGeometry(11,24,14,0,Math.PI*2,0,Math.PI*.52),hairM));
   const brow=ball(2.2,mat(0x2a1a10,.8),.7,.4,2.6),nose=ball(1.9,mat(SKIN,.5),1,1.2,.9),eyeS=S.map(()=>ball(1,mat(0x0a0a0a,.2),.9,.9,.9)),ear=S.map(()=>ball(2.4,mat(SKIN,.5),.6,1,.5));
   // реквизит
   const props=new T.Group();scene.add(props);
@@ -91,11 +91,11 @@ function Athlete3D(key,opts={}){
     const tl=new T.Vector3().subVectors(sP,hP).length();
     const ell=(m,f,h,z,sx,sy,sz)=>{m.position.copy(loc(f,h,z));m.quaternion.copy(q);m.scale.set(sx,sy,sz)};
     // торс
-    ell(pelvis,0,2,0,11.5,10,17);ell(waist,0,tl*.32,0,10.5,13,14);
-    ell(lats,-2.5,tl*.72,0,9,17,22);ell(chestB,1.5,tl*.74,0,11,15,20);
-    S.forEach((s,i)=>{ell(pecS[i],7.5,tl*.78,s*9.5,5.8,7.5,10);
+    ell(pelvis,0,2,0,11,10,16);ell(waist,0,tl*.32,0,10,13,13);
+    ell(lats,-3,tl*.72,0,10.5,19,30);ell(chestB,1.5,tl*.74,0,12.5,15,25);
+    S.forEach((s,i)=>{ell(pecS[i],8.5,tl*.78,s*11.5,7,8.8,12.5);
       [0,1,2].forEach(r=>ell(absS[r][i],9.2,tl*(.2+r*.12),s*3.6,2.6,4.2,4.2));});
-    ell(trap,-2,tl*.94,0,8,8,15);
+    ell(trap,-2,tl*.94,0,9.5,10,21);
     // голова
     const hc=loc(0,tl+17,0),fwd=new T.Vector3(1,0,0).applyQuaternion(q);
     place(neck,loc(0,tl-2,0),loc(0,tl+11,0));
@@ -103,13 +103,13 @@ function Athlete3D(key,opts={}){
     hair.position.copy(hc).addScaledVector(Y.clone().applyQuaternion(q),2);hair.quaternion.copy(q);hair.rotation.z+=0;
     brow.position.copy(hc).add(fwd.clone().multiplyScalar(9.2)).addScaledVector(Y.clone().applyQuaternion(q),3.2);brow.quaternion.copy(q);
     nose.position.copy(hc).add(fwd.clone().multiplyScalar(10.8)).addScaledVector(Y.clone().applyQuaternion(q),-.8);nose.quaternion.copy(q);
-    S.forEach((s,i)=>{eyeS[i].position.copy(hc).add(fwd.clone().multiplyScalar(9.2)).addScaledVector(Y.clone().applyQuaternion(q),1.4).setZ(s*3.6);ear[i].position.copy(hc).addScaledVector(fwd,-1).setZ(s*10.2);ear[i].quaternion.copy(q)});
+    S.forEach((s,i)=>{eyeS[i].position.copy(hc).add(fwd.clone().multiplyScalar(9.2)).addScaledVector(Y.clone().applyQuaternion(q),1.4).setZ(s*3.6);ear[i].position.copy(hc).addScaledVector(fwd,-1).setZ(s*9.8);ear[i].quaternion.copy(q)});
     // ноги
     S.forEach((s,i)=>{
       const footT=P.foot2?(i===0?P.foot:P.foot2):P.foot;
-      const hipP=V(P.hip.x,P.hip.y,s*9),ft=V(footT.x,footT.y,s*13);
+      const hipP=V(P.hip.x,P.hip.y,s*10),ft=V(footT.x,footT.y,s*14);
       const lg=ik(P.hip,footT,TH,SH,P.legDir);
-      const kn=V(lg.mid.x,lg.mid.y,s*(11+Math.max(0,3-i)*0)),an=V(lg.end.x,lg.end.y,s*13);
+      const kn=V(lg.mid.x,lg.mid.y,s*13),an=V(lg.end.x,lg.end.y,s*14);
       place(thighS[i],hipP,kn);place(shinS[i],kn,an);kneeS[i].position.copy(kn);
       const mid=kn.clone().lerp(an,.3);calfS[i].position.copy(mid).add(new T.Vector3(-3,0,0));
       const dir=new T.Vector3().subVectors(an,kn).normalize();calfS[i].quaternion.setFromUnitVectors(Y,dir);
@@ -124,10 +124,10 @@ function Athlete3D(key,opts={}){
     });
     // руки
     S.forEach((s,i)=>{
-      const grip=P.pullbar?30:P.bench?27:P.plate?23:21,flare=P.bench?-6:P.pullbar?0:P.toe?5:3;
-      const shP=V(P.shoulder.x,P.shoulder.y,s*21),hd=V(P.hand.x,P.hand.y,s*grip);
+      const grip=P.pullbar?36:P.bench?37:P.plate?32:28,flare=P.bench?-6:P.pullbar?0:P.toe?5:3;
+      const shP=V(P.shoulder.x,P.shoulder.y,s*28),hd=V(P.hand.x,P.hand.y,s*grip);
       const ar=P.elbow?{mid:P.elbow,end:P.hand}:ik(P.shoulder,P.hand,UA,FA,P.armDir);
-      const el=V(ar.mid.x,ar.mid.y,s*(21+(grip-21)*.5+flare)),wr=V(ar.end.x,ar.end.y,s*grip);
+      const el=V(ar.mid.x,ar.mid.y,s*(28+(grip-28)*.5+flare)),wr=V(ar.end.x,ar.end.y,s*grip);
       place(uarmS[i],shP,el);place(farmS[i],el,wr);elbS[i].position.copy(el);handS[i].position.copy(wr);
       deltS[i].position.copy(shP);
       bicS[i].position.copy(shP.clone().lerp(el,.45)).add(V(0,0,0));bicS[i].quaternion.setFromUnitVectors(Y,new T.Vector3().subVectors(el,shP).normalize());
