@@ -86,13 +86,19 @@ function techScreen(){
 function bindTech(){
   const els=[...document.querySelectorAll('[data-th]')];
   const ok=has3D();
-  let i=0;(function next(){
-    if(i>=els.length)return;const e=els[i++],k=e.dataset.th;
-    try{
-      if(ok){const im=new Image();im.src=thumb3d(k,MUS[k]);e.innerHTML='';e.appendChild(im);}
-      else{const sv=document.createElementNS('http://www.w3.org/2000/svg','svg');e.appendChild(sv);const f=makeFigure(sv);f.draw(k==='plank'?0:0.5,k);}
-    }catch(err){}
-    setTimeout(next,16);
+  const fill=(e,url)=>{const im=new Image();im.src=url;e.innerHTML='';e.appendChild(im)};
+  const svgThumb=(e,k)=>{const sv=document.createElementNS('http://www.w3.org/2000/svg','svg');e.appendChild(sv);const f=makeFigure(sv);f.draw(k==='plank'?0:0.5,k)};
+  (async()=>{
+    try{if(MX.ready)await MX.ready}catch(e){}
+    for(const e of els){
+      if(!document.body.contains(e))return; // ушли с экрана
+      const k=e.dataset.th;
+      try{
+        if(ok&&typeof mxHas==='function'&&mxHas(k)){try{fill(e,await thumbMx(k,MUS[k]));await new Promise(r=>setTimeout(r,16));continue}catch(err){console.warn('thumbMx',err)}}
+        if(ok)fill(e,thumb3d(k,MUS[k]));else svgThumb(e,k);
+      }catch(err){}
+      await new Promise(r=>setTimeout(r,16));
+    }
   })();
   document.querySelectorAll('[data-ex]').forEach(c=>c.onclick=()=>{hap();S.ex=c.dataset.ex;render()});
 }

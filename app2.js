@@ -8,9 +8,13 @@ function curProg(){let p=progById(S.prog);if(!p||false){p=PROGS.find(x=>x.lvl===
 const lastW=k=>{const a=S.log[k];return a&&a.length?a[a.length-1].w:''};
 
 /* ---------- План ---------- */
+function nextDayIdx(P){
+  const ks=Object.keys(S.done).sort();if(!ks.length)return 0;
+  const i=P.days.findIndex(d=>d.n===S.done[ks[ks.length-1]]);return i<0?0:(i+1)%P.days.length;
+}
 function planScreen(){
   if(S.progPick)return progLibrary();
-  const P=curProg(),q=quoteOfDay(),target=P.freq,total=Object.keys(S.done).length;
+  const P=curProg(),q=quoteOfDay(),target=P.freq,total=Object.keys(S.done).length,nd=nextDayIdx(P),doneToday=!!S.done[today()];
   return `<div class="hero"><div class="q">${q[0]}</div><div class="tr">${q[1]}</div></div>
   <div class="stats"><div><b>${weekCount()}/${target}</b><span>за неделю</span></div><div><b>${streak()}🔥</b><span>дней подряд</span></div><div><b>${total}</b><span>всего тренировок</span></div></div>
   <div class="card"><div class="row sb"><span class="tag">${LEVELS[P.lvl].name}</span><span class="hint">${P.freq} дн/нед · ${P.weeks} нед</span></div>
@@ -18,7 +22,7 @@ function planScreen(){
    <p>${P.desc}</p><p class="hint"><b>Для кого:</b> ${P.who}</p>
    <button class="btn ghost small" id="pickprog">🔁 Сменить</button> <button class="btn ghost small" id="findprog">🎯 Подобрать</button></div>
   ${S.sess?`<div class="card" style="border-color:var(--accent)"><b>Идёт тренировка</b><div class="hint">${progById(S.sess.pid).days[S.sess.di].n}</div><button class="btn small" id="resume" style="margin-top:8px">▶ Продолжить</button></div>`:''}
-  ${P.days.map((d,di)=>`<div class="card"><div class="row sb"><b>${d.n}</b><span class="tag warn">${d.focus}</span></div>
+  ${P.days.map((d,di)=>`<div class="card" ${di===nd&&!doneToday?'style="border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset"':''}><div class="row sb"><b>${di===nd&&!doneToday?'⭐ Сегодня: ':''}${d.n}</b><span class="tag warn">${d.focus}</span></div>
    <table>${d.ex.map(e=>`<tr><td>${hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">▶ ${exName(e.id)}</a>`:exName(e.id)}${e.note?`<div class="hint">${e.note}</div>`:''}</td>
    <td style="white-space:nowrap;text-align:right"><b>${e.s}×${e.r}</b><div class="hint">RIR ${e.rir} · ${fmtRest(e.rest)}</div></td></tr>`).join('')}</table>
    <button class="btn" data-start="${di}" style="margin-top:10px">▶ Начать тренировку</button></div>`).join('')}
@@ -49,6 +53,7 @@ function topReps(r){const n=String(r).replace(/–/g,'-').match(/\d+/g);if(!n||/
 function sessionScreen(){
   const ss=S.sess,P=progById(ss.pid),D=P.days[ss.di];
   return `<button class="back" id="sback">‹ К программе</button><h1>${D.n}</h1><div class="hint">${P.name} · <span id="elapsed">0:00</span></div>
+  ${warmupHtml(D)}
   ${D.ex.map((e,ei)=>{const k=exKey(e.id),lw=lastW(k);
    return `<div class="card"><div class="row sb"><b>${hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">▶ ${exName(e.id)}</a>`:exName(e.id)}</b><span class="tag">RIR ${e.rir}</span></div>
    <div class="hint">${e.s}×${e.r} · отдых ${fmtRest(e.rest)}${lw?` · прошлый вес ${lw} кг`:''}</div>${e.note?`<div class="hint">${e.note}</div>`:''}
@@ -306,4 +311,11 @@ function bindOnb(){
     document.querySelectorAll('[data-pick2]').forEach(c=>c.onclick=()=>{S.prog=c.dataset.pick2;store.set('prog',S.prog);store.set('onb',true);S.screen=null;S.tab='plan';hap('medium');toast('Программа выбрана');render()});
     $('#ob_out').scrollIntoView({behavior:'smooth'});
   };
+}
+
+function warmupHtml(D){
+  const e=D.ex[0],k=exKey(e.id),w=parseFloat(lastW(k));
+  const r5=x=>Math.max(0,Math.round(x/2.5)*2.5);
+  const rows=w>0?[[0.4,8],[0.6,5],[0.8,3]].map(([f,r])=>`<tr><td>${r5(w*f)} кг</td><td>× ${r}</td></tr>`).join(''):'<tr><td colspan="2" class="hint">Запиши первый подход, и я посчитаю разминку по твоему рабочему весу.</td></tr>';
+  return `<details class="card"><summary>🔥 Разминка перед «${exName(e.id)}»</summary><div class="hint" style="margin:6px 0">5–7 минут кардио и мобильность, затем подводящие подходы с отдыхом 60 сек:</div><table>${rows}</table></details>`;
 }

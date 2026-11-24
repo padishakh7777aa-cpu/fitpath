@@ -44,6 +44,14 @@ const POSES={
     return {foot:{x:0,y:0},hip,shoulder:s,elbow:el,hand:{x:el.x+30*Math.sin(th),y:el.y-30*Math.cos(th)},legDir:1,armDir:-1,plate:true,cx:150}},
   calf:p=>{const hip={x:-2,y:89+10*p},s=sh(hip,0);
     return {foot:{x:0,y:10*p},hip,shoulder:s,hand:{x:s.x+4,y:s.y-60},legDir:1,armDir:-1,footAng:L(0,35,p),cx:150}},
+  dips:p=>{const a=L(2,25,p)*Math.PI/180,sy=L(172,128,p),sx=L(0,6,p),s={x:sx,y:sy},hip={x:sx-55*Math.sin(a),y:sy-55*Math.cos(a)};
+    return {foot:{x:hip.x-26,y:hip.y-62},hip,shoulder:s,hand:{x:0,y:112},legDir:1,armDir:-1,dipbar:true,cx:150}},
+  pulldown:p=>{const hip={x:-8,y:48},s=sh(hip,-8),top={x:s.x+2,y:s.y+60},bot={x:s.x+14,y:s.y+6};
+    return {foot:{x:28,y:0},hip,shoulder:s,hand:{x:L(top.x,bot.x,p),y:L(top.y,bot.y,p)},legDir:1,armDir:-1,cbar:true,cable:{x:-4,y:240},seat:true,cx:150}},
+  hipthrust:p=>{const sx=-52,sy=46,th=L(-33,4,p)*Math.PI/180,hip={x:sx+55*Math.cos(th),y:sy+55*Math.sin(th)};
+    return {foot:{x:32,y:0},hip,shoulder:{x:sx,y:sy},hand:{x:hip.x+2,y:hip.y+9},legDir:1,armDir:1,plate:true,bench2:true,cx:175}},
+  pushdown:p=>{const hip={x:-2,y:89},s=sh(hip,4),el={x:s.x+4,y:s.y-32},ph=L(100,2,p)*Math.PI/180;
+    return {foot:{x:0,y:0},hip,shoulder:s,elbow:el,hand:{x:el.x+30*Math.sin(ph),y:el.y-30*Math.cos(ph)},legDir:1,armDir:-1,cable:{x:14,y:236},cbar:true,cx:150}},
   bridge:p=>{const s={x:-55,y:6},th=L(2,45,p)*Math.PI/180,hip={x:s.x+TL*Math.cos(th),y:s.y+TL*Math.sin(th)};
     return {foot:{x:35,y:0},hip,shoulder:s,hand:{x:s.x+61,y:s.y-4},legDir:1,armDir:1,cx:185}},
 };

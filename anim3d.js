@@ -2,6 +2,7 @@
 function has3D(){try{const c=document.createElement('canvas');return !!(window.THREE&&(c.getContext('webgl2')||c.getContext('webgl')))}catch(e){return false}}
 
 const CAM={ // цель камеры и дистанция по упражнениям
+  dips:{tx:0,ty:120,d:370},pulldown:{tx:0,ty:115,d:380},hipthrust:{tx:-10,ty:40,d:300},pushdown:{tx:5,ty:100,d:340},
   default:{tx:-5,ty:88,d:330},pushup:{tx:-65,ty:40,d:360},plank:{tx:-65,ty:40,d:360},
   bench:{tx:-25,ty:50,d:300},pullup:{tx:0,ty:120,d:400},bridge:{tx:-10,ty:30,d:280},
   ohp:{tx:0,ty:105,d:380},curl:{tx:0,ty:90,d:320},row:{tx:0,ty:70,d:320},calf:{tx:0,ty:80,d:330}
@@ -48,6 +49,9 @@ function Athlete3D(key,opts={}){
   const brow=ball(2.2,mat(0x2a1a10,.8),.7,.4,2.6),nose=ball(1.9,mat(SKIN,.5),1,1.2,.9),eyeS=S.map(()=>ball(1,mat(0x0a0a0a,.2),.9,.9,.9)),ear=S.map(()=>ball(2.4,mat(SKIN,.5),.6,1,.5));
   // реквизит
   const props=new T.Group();scene.add(props);
+  const dyn=new T.Group();scene.add(dyn);
+  const cableM=seg(.7,.7,steel,dyn),cbarM=new T.Mesh(new T.CylinderGeometry(1.5,1.5,86,14),steel);cbarM.rotation.x=Math.PI/2;cbarM.castShadow=true;dyn.add(cbarM);
+  cableM.visible=false;cbarM.visible=false;
   const bar=new T.Group();group.add(bar);bar.visible=false;
   const barM=add(new T.Mesh(new T.CylinderGeometry(1.5,1.5,230,16),steel),bar);barM.rotation.x=Math.PI/2;
   [-1,1].forEach(s=>{
@@ -68,8 +72,13 @@ function Athlete3D(key,opts={}){
       [-1,1].forEach(s=>{box(8,b+30,8,0x2b2b34,0,(b+30)/2,s*105);box(60,6,40,0x2b2b34,0,3,s*105)});
       const br=new T.Mesh(new T.CylinderGeometry(1.9,1.9,215,18),steel);br.rotation.x=Math.PI/2;br.position.set(0,b,0);br.castShadow=true;props.add(br);
       box(10,6,230,0x2b2b34,0,b+30,0);}
-    if(!P.bench&&!P.pullbar&&P.plate){ // стойки для штанги стоя не рисуем
-    }
+    if(P.bench2){box(46,38,36,0x1d1d24,-62,19,0);box(44,3,34,0xc8102e,-62,38.5,0)}
+    if(P.dipbar){[-1,1].forEach(s=>{const br=new T.Mesh(new T.CylinderGeometry(1.9,1.9,76,16),steel);br.rotation.z=Math.PI/2;br.position.set(0,112,s*26);br.castShadow=true;props.add(br);
+      box(7,112,7,0x2b2b34,-36,56,s*26);box(30,5,30,0x2b2b34,-36,2,s*26)});}
+    if(P.seat){box(34,10,34,0x1d1d24,-10,40,0);box(8,40,8,0x2b2b34,-10,20,0);
+      box(10,250,14,0x2b2b34,-70,125,0);box(96,10,14,0x2b2b34,-24,245,0);
+      box(6,40,30,0x3a3a46,28,32,0);}
+    if(P.cable&&!P.seat){box(10,250,14,0x2b2b34,-60,125,0);box(86,10,14,0x2b2b34,-18,245,0)}
   }
 
   const MUS={legs:[],glutes:[],back:[],chest:[],shoulders:[],arms:[],abs:[]};
@@ -126,7 +135,7 @@ function Athlete3D(key,opts={}){
     });
     // руки
     S.forEach((s,i)=>{
-      const grip=P.pullbar?36:P.bench?37:P.plate?32:28,flare=P.bench?-6:P.pullbar?0:P.toe?5:3;
+      const grip=P.dipbar?26:P.cbar?(P.seat?40:12):P.pullbar?36:P.bench?37:P.plate?32:28,flare=P.bench?-6:P.pullbar?0:P.toe?5:3;
       const shP=V(P.shoulder.x,P.shoulder.y,s*28),hd=V(P.hand.x,P.hand.y,s*grip);
       const ar=P.elbow?{mid:P.elbow,end:P.hand}:ik(P.shoulder,P.hand,UA,FA,P.armDir);
       const el=V(ar.mid.x,ar.mid.y,s*(28+(grip-28)*.5+flare)),wr=V(ar.end.x,ar.end.y,s*grip);
@@ -136,6 +145,8 @@ function Athlete3D(key,opts={}){
       bicS[i].position.copy(shP.clone().lerp(el,.45)).add(V(0,0,0));bicS[i].quaternion.setFromUnitVectors(Y,new T.Vector3().subVectors(el,shP).normalize());
       if(i===1&&P.plate){bar.visible=true;bar.position.set(wr.x,wr.y,0);}
       if(i===1&&!P.plate)bar.visible=false;
+      if(i===1){const hm=V(wr.x,wr.y,0);cbarM.visible=!!P.cbar;if(P.cbar)cbarM.position.copy(hm);
+        cableM.visible=!!P.cable;if(P.cable)place(cableM,V(P.cable.x,P.cable.y,0),hm);}
     });
     glow(p);
     return J;

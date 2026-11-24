@@ -145,3 +145,9 @@ const PROGS=[
   {n:'Жим (объём)',focus:'Вариации',ex:[x('bench',3,'8 @−15%',2,150,'Лёгкий день: скорость и техника'),x('text:Жим на наклонной',3,'8–10',1,120),x('text:Брусья',3,'8–10',1,120),x('curl',3,'10–12',0,60)]}
  ]}
 ];
+
+(function(){
+  const map={'text:Брусья':'dips','text:Брусья / жим гантелей':'dips','text:Тяга верхнего блока':'pulldown','text:Тяга верхнего блока (широкий хват)':'pulldown','text:Тяга верхнего блока узким':'pulldown',
+    'text:Разгибания на блоке':'pushdown','text:Разгибания на блоке (трицепс)':'pushdown','text:Трицепс на блоке':'pushdown'};
+  PROGS.forEach(p=>p.days.forEach(dy=>dy.ex.forEach(e=>{if(map[e.id])e.id=map[e.id];if(e.id==='bridge'&&/Хип-траст/.test(e.note||''))e.id='hipthrust'})));
+})();

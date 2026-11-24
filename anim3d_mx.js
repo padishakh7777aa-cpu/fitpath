@@ -7,7 +7,7 @@ function mxLoad(){
   if(!_mxG)_mxG=new Promise((res,rej)=>new THREE.GLTFLoader().load(MX.character,res,undefined,rej));
   return _mxG;
 }
-(async()=>{try{const r=await fetch('models/manifest.json');if(!r.ok)return;const m=await r.json();
+MX.ready=(async()=>{try{const r=await fetch('models/manifest.json');if(!r.ok)return;const m=await r.json();
   (m.animations||[]).forEach(k=>MX.clips[k]=true);MX.enabled=Object.keys(MX.clips).length>0;}catch(e){}})();
 async function playerMx(wrap,key,opts={}){
   if(!MX.clips[key])return playerMxProc(wrap,key,opts);
@@ -137,4 +137,22 @@ async function playerMxProc(wrap,key,opts={}){
     onPose:J=>rig.apply(J)});
   const stop=pl.stop;pl.stop=()=>{rig.holder.removeFromParent();stop()};
   return pl;
+}
+
+// Миниатюра упражнения на реалистичном персонаже (кеш)
+const _mxThumbs={};let _mxTR=null;
+async function thumbMx(key,mus){
+  if(_mxThumbs[key])return _mxThumbs[key];
+  const T=THREE,rig=await mxRig();
+  if(!_mxTR)_mxTR=makeRenderer(300,230,true);
+  const a=Athlete3D(key,{mus,bodyless:true}),cam=new T.PerspectiveCamera(32,300/230,5,3000);
+  a.scene.add(rig.holder);
+  const k1=new T.DirectionalLight(0xffffff,1.6);k1.position.set(120,180,320);a.scene.add(k1);
+  const f=new T.DirectionalLight(0x9fb4ff,.9);f.position.set(-200,120,200);a.scene.add(f);
+  const J=a.pose(key==='plank'?0:.5);rig.apply(J);
+  camFor(cam,key,.55,.17,300/230);
+  _mxTR.setSize(300,230,false);_mxTR.render(a.scene,cam);
+  const url=_mxTR.domElement.toDataURL('image/png');
+  rig.holder.removeFromParent();a.dispose();
+  return _mxThumbs[key]=url;
 }
