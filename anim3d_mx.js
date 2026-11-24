@@ -1,9 +1,9 @@
 // Реалистичный персонаж (Mixamo-скелет) + анимации из FBX.
 // Чтобы сменить персонажа (например, Brute из Mixamo), положи файл в models/ и поправь MX.character.
 const MX={
-  enabled:false, // включится, когда в models/ будет родной персонаж Mixamo (например Brute.fbx)
-  character:'models/Brute.fbx',
-  clips:{squat:'models/squat.fbx',pushup:'models/pushup.fbx',plank:'models/plank.fbx'},
+  enabled:false, // включается сам, если в models/ лежит character.fbx
+  character:'models/character.fbx',
+  clips:{}, // заполняется автоматически: models/<id упражнения>.fbx (squat, pushup, plank, deadlift, lunge, pullup, bench, ohp, row, rdl, curl, bridge, calf)
   scale:1 // 1 = рост ~175 см; увеличь (1.05–1.12) для более массивного вида
 };
 function mxHas(key){return !!(MX.enabled&&window.THREE&&THREE.GLTFLoader&&MX.clips[key])}
@@ -87,3 +87,15 @@ async function playerMx(wrap,key,opts={}){
   st.stop=()=>{cancelAnimationFrame(st.raf);holder.remove();mixer.stopAllAction();renderer.dispose();try{renderer.forceContextLoss()}catch(e){}cv.remove()};
   return st;
 }
+
+// Автообнаружение: если есть models/character.fbx — включаем реалистичного персонажа и найденные анимации
+(async()=>{
+  try{
+    const big=async u=>{const r=await fetch(u,{method:'HEAD'});return r.ok&&(+r.headers.get('content-length')||1e6)>50000};
+    if(!(await big(MX.character)))return;
+    const keys=Object.keys(EX);
+    const ok=await Promise.all(keys.map(k=>big(`models/${k}.fbx`).catch(()=>false)));
+    keys.forEach((k,i)=>{if(ok[i])MX.clips[k]=`models/${k}.fbx`});
+    MX.enabled=Object.keys(MX.clips).length>0;
+  }catch(e){}
+})();
