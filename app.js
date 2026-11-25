@@ -329,6 +329,8 @@ function showCrash(e){
 (function(){const _r=render;render=function(){try{_r()}catch(e){showCrash(e)}syncBack()}})();
 window.addEventListener('unhandledrejection',ev=>{try{console.warn('unhandled',ev.reason)}catch(_){}});
 render();cloudSync();
+// кэш для быстрых повторных запусков (где поддерживается)
+try{if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 // фоновая подгрузка 3D после первого экрана (если нет режима экономии трафика)
 setTimeout(()=>{try{if(!(navigator.connection&&navigator.connection.saveData))load3D().catch(()=>{})}catch(e){}},2500);
 setTimeout(()=>{const s=$('#splash');if(s){s.classList.add('off');setTimeout(()=>s.remove(),500)}},1300);
