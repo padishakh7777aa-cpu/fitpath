@@ -8,7 +8,7 @@ for(const lvl of ['beginner','advanced','pro'])for(const goal of ['mass','cut','
   const screens=await pg.evaluate(([lvl,goal,sex])=>{
     S.level=lvl;S.prof={sex,age:28,w:sex==='m'?82:61,h:sex==='m'?180:166,act:1.55,goal,set:true};store.set('onb',true);S.prog=null;S.g=null;S.sess=null;S.ex=null;S.screen=null;S.progPick=false;S.age18=true;
     const out=[];
-    for(const t of ['plan','food','prog','more','tech','mech','bio','tools','sup','health']){
+    for(const t of ['plan','food','prog','more','tech','mech','bio','tools','sup','health','about']){
       S.tab=t;S.screen=null;S.ex=null;
       try{render();out.push([t,document.body.innerText])}catch(e){out.push([t,'EXC '+e.message])}
     }

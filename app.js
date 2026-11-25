@@ -1,3 +1,4 @@
+const APP_VERSION='1.0.0';
 const tg=window.Telegram&&window.Telegram.WebApp;
 if(tg){try{tg.ready();tg.expand();tg.setHeaderColor&&tg.setHeaderColor('#09090b');tg.setBackgroundColor&&tg.setBackgroundColor('#09090b');}catch(e){}}
 const hap=t=>{try{tg&&tg.HapticFeedback&&tg.HapticFeedback.impactOccurred(t||'light')}catch(e){}};
@@ -36,7 +37,7 @@ const quoteOfDay=()=>QUOTES[Math.floor(Date.now()/864e5)%QUOTES.length];
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred('success')}catch(_){}setTimeout(()=>e.remove(),1800)}
 
 const TABS=[['plan','🏠','Сегодня'],['food','🥗','Питание'],['prog','📈','Прогресс'],['more','☰','Ещё']];
-const SUBTABS=['tech','mech','bio','tools','sup','health'];
+const SUBTABS=['tech','mech','bio','tools','sup','health','about'];
 
 function renderNav(){
   const n=$('#nav');
@@ -62,9 +63,9 @@ function render(){
   if(S.screen==='guide'&&S.g){v.innerHTML=guideScreen();bindGuide();return}
   if(S.screen==='session'&&S.sess){v.innerHTML=sessionScreen();bindSession();return}
   if(S.screen==='summary'&&S.summary){v.innerHTML=summaryScreen();$('#sumok').onclick=()=>{S.screen=null;S.summary=null;render()};$('#share').onclick=()=>shareSummary();return}
-  const map={plan:planScreen,tech:techScreen,mech:mechScreen,bio:bioScreen,food:foodScreen,prog:progScreen,tools:toolsScreen,sup:supScreen,health:healthScreen,more:moreScreen};
+  const map={plan:planScreen,tech:techScreen,mech:mechScreen,bio:bioScreen,food:foodScreen,prog:progScreen,tools:toolsScreen,sup:supScreen,health:healthScreen,about:aboutScreen,more:moreScreen};
   v.innerHTML=(SUBTABS.includes(S.tab)?'<button class="back" id="moreback">‹ Ещё</button>':'')+map[S.tab]()+`<div class="disc">Неофициальное приложение в духе легенды бодибилдинга. Не связано с Ронни Коулманом.</div>`;
-  ({plan:bindPlan,tech:bindTech,mech:()=>{},bio:bindBio,food:bindFood,prog:bindProg,tools:bindTools,sup:()=>{},health:bindHealth,more:bindMore})[S.tab]();
+  ({plan:bindPlan,tech:bindTech,mech:()=>{},bio:bindBio,food:bindFood,prog:bindProg,tools:bindTools,sup:()=>{},health:bindHealth,about:bindAbout,more:bindMore})[S.tab]();
   const mb=$('#moreback');if(mb)mb.onclick=()=>{S.tab='more';render()};
 }
 
@@ -301,6 +302,15 @@ function syncBack(){
     need?tg.BackButton.show():tg.BackButton.hide();}catch(e){}
 }
 try{if(tg&&tg.BackButton)tg.BackButton.onClick(goBack)}catch(e){}
-(function(){const _r=render;render=function(){_r();syncBack()}})();
+function showCrash(e){
+  try{console.error('render crash',e)}catch(_){}
+  const v=document.querySelector('#view');if(!v)return;
+  v.innerHTML=`<div class="crash"><div class="e">😵</div><h1>Что-то пошло не так</h1><p class="hint">Не переживай, твои данные сохранены. Попробуй вернуться на главный экран.</p>
+   <button class="btn" id="crashhome" style="margin-top:14px">На главный экран</button><button class="btn ghost" id="crashreload" style="margin-top:8px">Перезагрузить</button></div>`;
+  const h=document.querySelector('#crashhome');if(h)h.onclick=()=>{S.ex=null;S.screen=null;S.progPick=false;S.tab='plan';try{guideCleanup&&guideCleanup()}catch(_){}render()};
+  const r=document.querySelector('#crashreload');if(r)r.onclick=()=>location.reload();
+}
+(function(){const _r=render;render=function(){try{_r()}catch(e){showCrash(e)}syncBack()}})();
+window.addEventListener('unhandledrejection',ev=>{try{console.warn('unhandled',ev.reason)}catch(_){}});
 render();cloudSync();
 setTimeout(()=>{const s=$('#splash');if(s){s.classList.add('off');setTimeout(()=>s.remove(),500)}},1300);

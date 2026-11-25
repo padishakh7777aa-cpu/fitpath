@@ -127,11 +127,12 @@ function updateGuide(){
 }
 function gIntro(g,D,steps){
   $('#gbody').innerHTML=`<h1 style="margin:12px 0 4px">${D.n}</h1><div class="hint">${D.ex.length} ${plural(D.ex.length,['упражнение','упражнения','упражнений'])} · около ${gDur(g)} минут</div>
+  ${store.get('safety',false)?'':`<div class="warnbox" id="gsafe" style="font-size:13px"><b>Перед первой тренировкой</b><ul style="margin:6px 0 0;padding-left:18px"><li>Сделай короткую разминку 5 минут.</li><li>Выбирай вес, с которым техника остаётся чистой.</li><li>При боли в суставе, головокружении или боли в груди остановись.</li></ul></div>`}
   <button class="btn xl pulse" id="gstart" style="margin:12px 0">▶ Погнали!</button>
   <div class="card"><table>${D.ex.map((e,ei)=>{const w=g.base[ei],k=exKey(e.id),bw=BWEX.includes(k);
     return `<tr><td><b>${exName(e.id)}</b><div class="hint">${e.s} ${plural(e.s,['подход','подхода','подходов'])} по ${repsText(e.r)}</div></td><td style="text-align:right;white-space:nowrap">${bw?'вес тела':g.unk[ei]?'подберём':'<b>'+fw(w)+' кг</b>'}</td></tr>`}).join('')}</table></div>
   <div class="hint" style="text-align:center">Просто делай то, что показываю. Вес и отдых я подскажу.</div>`;
-  $('#gstart').onclick=()=>{hap('medium');beep(880,.08);g.phase='step';store.set('gsess',g);updateGuide()};
+  $('#gstart').onclick=()=>{store.set('safety',true);hap('medium');beep(880,.08);g.phase='step';store.set('gsess',g);updateGuide()};
 }
 function gWork(g,D,steps,s){
   const e=D.ex[s.ei],k=exKey(e.id),ex=EX[k],bw=BWEX.includes(k),warm=s.t==='warm';

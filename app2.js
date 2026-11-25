@@ -408,7 +408,7 @@ function startScreen(){
   const o=S.ob||(S.ob={step:1});
   if(o.step===1)return `<div class="hero"><div class="q">Давай начнём</div><div class="tr">Два вопроса — и твоя тренировка готова</div></div>
    <h1>Какая у тебя цель?</h1>
-   ${[['mass','💪','Набрать мышцы'],['cut','🔥','Похудеть и подтянуться'],['strength','🏋️','Стать сильнее']].map(([v,i,t])=>`<button class="big" data-goal="${v}"><span>${i}</span>${t}</button>`).join('')}`;
+   ${[['mass','💪','Набрать мышцы'],['cut','🔥','Похудеть и подтянуться'],['strength','🏋️','Стать сильнее']].map(([v,i,t])=>`<button class="big" data-goal="${v}"><span>${i}</span>${t}</button>`).join('')}<div class="hint" style="text-align:center;margin-top:10px">Приложение не заменяет врача. При проблемах со здоровьем сначала посоветуйся с врачом.</div>`;
   return `<button class="back" id="obback">‹ Назад</button><h1>Какой у тебя опыт?</h1>
    ${[['beginner','🌱','Только начинаю','Не тренировался или давно не ходил'],['advanced','🔥','Тренируюсь больше года','Знаю базовые упражнения'],['pro','🏆','Опытный атлет','Серьёзные веса, свой режим']].map(([v,i,t,d])=>`<button class="big" data-lvl="${v}"><span>${i}</span><div>${t}<small>${d}</small></div></button>`).join('')}`;
 }
@@ -425,7 +425,7 @@ function bindStart(){
 }
 /* ---------- Меню «Ещё» ---------- */
 function moreScreen(){
-  const items=[['tech','🎬','Техника упражнений','3D-показ каждого упражнения'],['food','🥗','Питание','Сколько есть и что'],['sup','💊','Спортпит','Что работает, а что нет'],['bio','🧬','Восстановление и сон','Режим дня, готовность'],['mech','🧠','Как растут мышцы','Простыми словами и подробно'],['tools','🧰','Инструменты','Калькуляторы, таймер'],['health','❤️','Здоровье','Анализы и безопасность'],['change','🔁','Сменить цель или опыт','Подобрать курс заново']];
+  const items=[['tech','🎬','Техника упражнений','3D-показ каждого упражнения'],['food','🥗','Питание','Сколько есть и что'],['sup','💊','Спортпит','Что работает, а что нет'],['bio','🧬','Восстановление и сон','Режим дня, готовность'],['mech','🧠','Как растут мышцы','Простыми словами и подробно'],['tools','🧰','Инструменты','Калькуляторы, таймер'],['health','❤️','Здоровье','Анализы и безопасность'],['change','🔁','Сменить цель или опыт','Подобрать курс заново'],['about','ℹ️','О приложении','Версия, данные, условия']];
   return `<h1>Ещё</h1>${items.map(([id,i,t,d])=>`<div class="card click row" data-go="${id}" style="gap:14px"><div style="font-size:28px">${i}</div><div><b>${t}</b><div class="hint">${d}</div></div></div>`).join('')}
    <div class="card click row" id="invite" style="gap:14px"><div style="font-size:28px">🤝</div><div><b>Пригласить друга</b><div class="hint">Вместе тренироваться веселее</div></div></div>
    <div class="card click row" id="freeopen" style="gap:14px"><div style="font-size:28px">✍️</div><div><b>Свободная тренировка</b><div class="hint">Записать подходы самому</div></div></div>`;
@@ -437,4 +437,34 @@ function bindMore(){
   const f=$('#freeopen');if(f)f.onclick=()=>{hap('medium');startFree()};
   const iv=$('#invite');if(iv)iv.onclick=()=>{hap();const url='https://t.me/share/url?url='+encodeURIComponent(location.href.split('#')[0].split('?')[0])+'&text='+encodeURIComponent('Тренируюсь в LIGHTWEIGHT: приложение само ведёт по тренировке, подсказывает вес и отдых. Попробуй!');
     try{if(tg&&tg.openTelegramLink){tg.openTelegramLink(url);return}}catch(e){}window.open(url,'_blank')};
+}
+
+/* ---------- О приложении, данные, условия ---------- */
+function aboutScreen(){
+  return `<h1>О приложении</h1>
+  <div class="card"><b>LIGHTWEIGHT</b> · версия ${APP_VERSION}<div class="hint">Тренировки с гидом, 3D-техника, питание и прогресс в Telegram.</div>
+   <div class="hint" style="margin-top:6px">Неофициальный проект в духе легенды бодибилдинга. Не связан с Ронни Коулманом и не одобрен им.</div></div>
+  <div class="card legal"><b>Здоровье и безопасность</b>
+   <p>Приложение даёт общую информацию о тренировках и питании и <b>не заменяет врача</b>. Перед началом занятий проконсультируйся с врачом, если у тебя есть заболевания, травмы, беременность или ты давно не тренировался.</p>
+   <p>Остановись и прекрати упражнение при боли в суставах, головокружении, боли в груди или одышке. Веса и подходы в приложении — ориентир, подбирай нагрузку по самочувствию.</p>
+   <p>Раздел о гормональных препаратах содержит только информацию о рисках. Приложение не даёт схем и дозировок и не призывает к их применению.</p></div>
+  <div class="card legal"><b>Конфиденциальность</b>
+   <p>Мы не собираем и не передаём твои персональные данные, не используем рекламу и аналитику.</p>
+   <p>Данные тренировок, питания и прогресса хранятся на твоём устройстве и в облачном хранилище Telegram, которое доступно только тебе. Твоё имя из Telegram используется только для приветствия на экране.</p></div>
+  <div class="card"><b>Твои данные</b>
+   <div class="hint" style="margin:4px 0 8px">Скопируй резервную копию или полностью удали данные.</div>
+   <button class="btn ghost" id="exp">📋 Скопировать данные</button>
+   <button class="btn ghost" id="wipe" style="margin-top:8px;border-color:var(--bad);color:var(--bad)">🗑 Удалить все данные</button></div>`;
+}
+function bindAbout(){
+  const ex=$('#exp');if(ex)ex.onclick=async()=>{
+    const data={};Object.keys(localStorage).filter(k=>k.startsWith('fp_')).forEach(k=>{try{data[k]=JSON.parse(localStorage.getItem(k))}catch(e){data[k]=localStorage.getItem(k)}});
+    const txt=JSON.stringify({app:'lightweight',version:APP_VERSION,exported:new Date().toISOString(),data});
+    try{await navigator.clipboard.writeText(txt);toast('Скопировано')}catch(e){
+      const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('Скопировано')}catch(_){toast('Не удалось скопировать')}t.remove()}};
+  const w=$('#wipe');if(w)w.onclick=()=>{
+    if(!confirm('Удалить все данные: журнал, прогресс, настройки? Это нельзя отменить.'))return;
+    Object.keys(localStorage).filter(k=>k.startsWith('fp_')).forEach(k=>localStorage.removeItem(k));
+    try{if(cs&&cs.getKeys)cs.getKeys((e,keys)=>{if(!e&&keys&&keys.length)cs.removeItems(keys.filter(k=>k.startsWith('fp_')))})}catch(e){}
+    toast('Данные удалены');setTimeout(()=>location.reload(),700)};
 }

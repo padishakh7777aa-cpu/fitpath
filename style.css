@@ -147,3 +147,13 @@ button.big:active{transform:scale(.98);border-color:var(--accent)}
 .bigline{text-align:center;font-family:Impact,Haettenschweiler,sans-serif;font-size:46px;color:var(--accent);margin:10px 0 2px;letter-spacing:1px}
 .lnk{color:var(--hint);font-size:13px;text-decoration:underline}
 .tag{white-space:nowrap}
+
+/* ===== Доступность и мобильные мелочи ===== */
+input,select{font-size:16px}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}#splash{display:none}}
+.crash{text-align:center;padding:40px 16px}
+.crash .e{font-size:54px}
+.legal p{font-size:13px;color:var(--hint);margin:6px 0}
+.legal b{color:var(--text)}
