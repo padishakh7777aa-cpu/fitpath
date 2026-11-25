@@ -2,7 +2,7 @@ const {chromium}=require('playwright');
 (async()=>{const b=await chromium.launch();const pg=await b.newPage({viewport:{width:390,height:844}});
 const errs=[];pg.on('pageerror',x=>errs.push('PE '+x.message));pg.on('dialog',d=>d.accept());
 await pg.goto((process.env.URL||'http://localhost:8123/index.html'));await pg.waitForTimeout(1200);
-await pg.evaluate(()=>{window.has3D=()=>false});
+await pg.evaluate(()=>{window.__no3d=true;window.has3D=()=>false});
 const bad=[];let n=0;
 for(const lvl of ['beginner','advanced','pro'])for(const goal of ['mass','cut','keep'])for(const sex of ['m','f']){
   const screens=await pg.evaluate(([lvl,goal,sex])=>{

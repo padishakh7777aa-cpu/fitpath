@@ -101,6 +101,7 @@ async function setStage(key){
   if(!e){const tx=txFor(key),d=document.createElement('div');ph.textContent='';d.className='gph';d.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;text-align:center;padding:12px';d.innerHTML='<div style="font-size:56px">🏋️</div>'+(tx?'<div class="tag warn">'+tx.m+'</div>':'');wrap.appendChild(d);return}
   ph.textContent=e.phases[0];
   const period=key==='plank'?5:3.6;let pl=null;
+  try{await load3D()}catch(err){}
   try{if(has3D()&&typeof mxHas==='function'){if(MX.ready)await MX.ready;
       if(mxHas(key))pl=await playerMx(wrap,key,{period,mus:MUS[key]});}}catch(err){pl=null}
   if(tk!==GD.token){if(pl)pl.stop();return}

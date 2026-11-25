@@ -1,4 +1,15 @@
 const APP_VERSION='1.0.0';
+// ---- ленивая загрузка 3D (three.js, персонаж): подгружается в фоне после первого экрана ----
+const ASSET_Q=(()=>{try{const s=document.currentScript&&document.currentScript.src||'';return s.includes('?')?'?'+s.split('?')[1]:''}catch(e){return ''}})();
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=res;s.onerror=()=>rej(new Error('load '+src));document.head.appendChild(s)})}
+let _p3d=null;
+function load3D(){
+  if(window.__no3d)return Promise.reject(new Error('3d disabled'));
+  if(window.THREE&&typeof makeRenderer==='function')return Promise.resolve();
+  if(!_p3d)_p3d=(async()=>{for(const f of ['vendor/three-bundle.js','anim3d.js','anim3d_mx.js'])await loadScript(f+ASSET_Q)})().catch(e=>{_p3d=null;throw e});
+  return _p3d;
+}
+if(typeof has3D==='undefined')var has3D=()=>false;
 const tg=window.Telegram&&window.Telegram.WebApp;
 if(tg){try{tg.ready();tg.expand();tg.setHeaderColor&&tg.setHeaderColor('#09090b');tg.setBackgroundColor&&tg.setBackgroundColor('#09090b');}catch(e){}}
 const hap=t=>{try{tg&&tg.HapticFeedback&&tg.HapticFeedback.impactOccurred(t||'light')}catch(e){}};
@@ -91,11 +102,11 @@ function techScreen(){
 }
 function bindTech(){
   const els=[...document.querySelectorAll('[data-th]')];
-  const ok=has3D();
+  let ok=false;
   const fill=(e,url)=>{const im=new Image();im.src=url;e.innerHTML='';e.appendChild(im)};
   const svgThumb=(e,k)=>{const sv=document.createElementNS('http://www.w3.org/2000/svg','svg');e.appendChild(sv);const f=makeFigure(sv);f.draw(k==='plank'?0:0.5,k)};
   (async()=>{
-    try{if(MX.ready)await MX.ready}catch(e){}
+    try{await load3D();ok=has3D();if(ok&&MX.ready)await MX.ready}catch(e){ok=false}
     for(const e of els){
       if(!document.body.contains(e))return; // ушли с экрана
       const k=e.dataset.th;
@@ -148,10 +159,15 @@ function bindEx(k){
     try{if(has3D()){pl=player3d(wrap,k,{mus:MUS[k],period});pl.setView(35);wire();return}}catch(err){}
     const sv=document.createElementNS('http://www.w3.org/2000/svg','svg');sv.style.cssText='width:100%;height:100%';wrap.insertBefore(sv,wrap.firstChild);pl=player(sv,k,{period});$('#views').style.display='none';wire();
   };
-  if(has3D()&&typeof mxHas==='function'&&mxHas(k)){
-    const ld=document.createElement('div');ld.className='hintdrag';ld.style.top='45%';ld.style.fontSize='13px';ld.textContent='Загружаю модель…';wrap.appendChild(ld);
-    playerMx(wrap,k,{period,mus:MUS[k]}).then(p=>{ld.remove();if(S.ex!==k){p.stop();return}pl=p;pl.setView(35);wire();}).catch(err=>{ld.remove();console.warn('mx fail',err);fallback()});
-  }else fallback();
+  const ld=document.createElement('div');ld.className='hintdrag';ld.style.top='45%';ld.style.fontSize='13px';ld.textContent='Загружаю 3D…';wrap.appendChild(ld);
+  const start=async()=>{
+    try{if(typeof MX!=='undefined'&&MX.ready)await MX.ready}catch(err){}
+    if(S.ex!==k){ld.remove();return}
+    if(has3D()&&typeof mxHas==='function'&&mxHas(k)){
+      playerMx(wrap,k,{period,mus:MUS[k]}).then(p=>{ld.remove();if(S.ex!==k){p.stop();return}pl=p;pl.setView(35);wire();}).catch(err=>{ld.remove();console.warn('mx fail',err);fallback()});
+    }else{ld.remove();fallback()}
+  };
+  load3D().then(start,()=>{ld.remove();fallback()});
   document.querySelectorAll('#views button').forEach(b=>b.onclick=()=>{hap();
     document.querySelectorAll('#views button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
     if(!pl)return;if(b.dataset.v==='spin'){pl.spin=!pl.spin}else{pl.setView(+b.dataset.v)}
@@ -313,4 +329,6 @@ function showCrash(e){
 (function(){const _r=render;render=function(){try{_r()}catch(e){showCrash(e)}syncBack()}})();
 window.addEventListener('unhandledrejection',ev=>{try{console.warn('unhandled',ev.reason)}catch(_){}});
 render();cloudSync();
+// фоновая подгрузка 3D после первого экрана (если нет режима экономии трафика)
+setTimeout(()=>{try{if(!(navigator.connection&&navigator.connection.saveData))load3D().catch(()=>{})}catch(e){}},2500);
 setTimeout(()=>{const s=$('#splash');if(s){s.classList.add('off');setTimeout(()=>s.remove(),500)}},1300);
