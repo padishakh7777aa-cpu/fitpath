@@ -59,6 +59,14 @@ const POSES={
     return {foot,hip,shoulder:s,hand:{x:hip.x-8,y:hip.y+12},legDir:-1,armDir:1,footAng:-135,legpress:true,cx:150}},
   lateral:p=>{const hip={x:-2,y:89},s=sh(hip,3);
     return {foot:{x:0,y:0},hip,shoulder:s,hand:{x:s.x,y:s.y-60},legDir:1,armDir:1,lateral:true,lat:p,cx:150}},
+  skull:p=>{const hip={x:0,y:30},sh0={x:-55,y:30},el={x:-55,y:62},ph=L(0,100,p)*Math.PI/180;
+    return {foot:{x:38,y:0},hip,shoulder:sh0,elbow:el,hand:{x:el.x-30*Math.sin(ph),y:el.y+30*Math.cos(ph)},legDir:1,armDir:1,plate:true,bench:true,cx:175}},
+  legext:p=>{const hip={x:-8,y:48},kn={x:37,y:44},ps=L(-85,-6,p)*Math.PI/180,s=sh(hip,-5);
+    return {foot:{x:kn.x+45*Math.cos(ps),y:kn.y+45*Math.sin(ps)},hip,shoulder:s,hand:{x:hip.x+6,y:hip.y+8},legDir:1,armDir:1,legmach:true,cx:150}},
+  legcurl:p=>{const hip={x:-8,y:48},kn={x:37,y:44},ps=L(-8,-100,p)*Math.PI/180,s=sh(hip,-5);
+    return {foot:{x:kn.x+45*Math.cos(ps),y:kn.y+45*Math.sin(ps)},hip,shoulder:s,hand:{x:hip.x+6,y:hip.y+8},legDir:1,armDir:1,legmach:true,cx:150}},
+  facepull:p=>{const hip={x:-2,y:89},s=sh(hip,0);
+    return {foot:{x:0,y:0},hip,shoulder:s,hand:{x:L(s.x+58,s.x+16,p),y:L(s.y-4,s.y+6,p)},legDir:1,armDir:-1,flareZ:14,cable:{x:80,y:s.y+2},colX:98,cbar:true,cx:150}},
   bridge:p=>{const s={x:-55,y:6},th=L(2,45,p)*Math.PI/180,hip={x:s.x+TL*Math.cos(th),y:s.y+TL*Math.sin(th)};
     return {foot:{x:35,y:0},hip,shoulder:s,hand:{x:s.x+61,y:s.y-4},legDir:1,armDir:1,cx:185}},
 };

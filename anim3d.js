@@ -4,6 +4,7 @@ function has3D(){try{const c=document.createElement('canvas');return !!(window.T
 const CAM={ // цель камеры и дистанция по упражнениям
   dips:{tx:0,ty:120,d:370},pulldown:{tx:0,ty:115,d:380},hipthrust:{tx:-10,ty:40,d:300},pushdown:{tx:5,ty:100,d:340},
   incline:{tx:-25,ty:60,d:320},legpress:{tx:10,ty:65,d:330},lateral:{tx:0,ty:100,d:340},
+  skull:{tx:-25,ty:50,d:300},legext:{tx:15,ty:50,d:330},legcurl:{tx:15,ty:50,d:330},facepull:{tx:25,ty:105,d:350},
   default:{tx:-5,ty:88,d:330},pushup:{tx:-65,ty:40,d:360},plank:{tx:-65,ty:40,d:360},
   bench:{tx:-25,ty:50,d:300},pullup:{tx:0,ty:120,d:400},bridge:{tx:-10,ty:30,d:280},
   ohp:{tx:0,ty:105,d:380},curl:{tx:0,ty:90,d:320},row:{tx:0,ty:70,d:320},calf:{tx:0,ty:80,d:330}
@@ -53,6 +54,7 @@ function Athlete3D(key,opts={}){
   const dyn=new T.Group();scene.add(dyn);
   const cableM=seg(.7,.7,steel,dyn),cbarM=new T.Mesh(new T.CylinderGeometry(1.5,1.5,86,14),steel);cbarM.rotation.x=Math.PI/2;cbarM.castShadow=true;dyn.add(cbarM);
   cableM.visible=false;cbarM.visible=false;
+  const roller=new T.Mesh(new T.CylinderGeometry(5,5,44,16),mat(0xc8102e,.5,.2));roller.rotation.x=Math.PI/2;roller.castShadow=true;roller.visible=false;dyn.add(roller);
   const plat=new T.Mesh(new T.BoxGeometry(5,60,76),mat(0x3a3a46,.5,.6));plat.castShadow=true;plat.visible=false;dyn.add(plat);
   const dbs=[0,1].map(()=>{const g=new T.Group();const h=new T.Mesh(new T.CylinderGeometry(1.6,1.6,14,12),steel);h.rotation.z=Math.PI/2;g.add(h);
     [-1,1].forEach(k=>{const hd=new T.Mesh(new T.CylinderGeometry(6,6,6,20),plateM);hd.rotation.z=Math.PI/2;hd.position.x=k*8;hd.castShadow=true;g.add(hd)});g.visible=false;dyn.add(g);return g});
@@ -90,7 +92,11 @@ function Athlete3D(key,opts={}){
     if(P.seat){box(34,10,34,0x1d1d24,-10,40,0);box(8,40,8,0x2b2b34,-10,20,0);
       box(10,250,14,0x2b2b34,-70,125,0);box(96,10,14,0x2b2b34,-24,245,0);
       box(6,40,30,0x3a3a46,28,32,0);}
-    if(P.cable&&!P.seat){box(10,250,14,0x2b2b34,-60,125,0);box(86,10,14,0x2b2b34,-18,245,0)}
+    if(P.cable&&!P.seat){const cx0=P.colX!==undefined?P.colX:-60;
+      if(P.colX!==undefined){box(10,200,14,0x2b2b34,cx0,100,0);box(Math.abs(cx0-P.cable.x)+10,8,14,0x2b2b34,(cx0+P.cable.x)/2,P.cable.y,0)}
+      else{box(10,250,14,0x2b2b34,cx0,125,0);box(86,10,14,0x2b2b34,-18,245,0)}}
+    if(P.legmach){box(36,10,36,0x1d1d24,-8,40,0);const bk=box(10,64,34,0x1d1d24,0,0,0);bk.rotation.z=-8*Math.PI/180;bk.position.set(-22,76,0);
+      box(8,34,8,0x2b2b34,-8,17,0);box(60,6,40,0x2b2b34,-6,3,0);box(8,90,8,0x2b2b34,-30,50,-24);box(8,90,8,0x2b2b34,-30,50,24);}
   }
 
   let lastP=null;
@@ -153,7 +159,7 @@ function Athlete3D(key,opts={}){
     });
     // руки
     S.forEach((s,i)=>{
-      const grip=P.dipbar?26:P.cbar?(P.seat?40:12):P.pullbar?36:P.bench?37:P.plate?32:28,flare=P.bench?-6:P.pullbar?0:P.toe?5:3;
+      const grip=P.dipbar?26:P.cbar?(P.seat?40:12):P.pullbar?36:P.bench?37:P.plate?32:28,flare=(P.bench?-6:P.pullbar?0:P.toe?5:3)+(P.flareZ||0)*(P.cbar?1:0);
       const shP=V(P.shoulder.x,P.shoulder.y,s*28),hd=V(P.hand.x,P.hand.y,s*grip);
       let el,wr;
       if(P.lateral){const th=(8+80*P.lat)*Math.PI/180;
@@ -170,6 +176,7 @@ function Athlete3D(key,opts={}){
       if(i===1){const hm=V(wr.x,wr.y,0);cbarM.visible=!!P.cbar;if(P.cbar)cbarM.position.copy(hm);
         cableM.visible=!!P.cable;if(P.cable)place(cableM,V(P.cable.x,P.cable.y,0),hm);}
     });
+    roller.visible=!!P.legmach;if(P.legmach)roller.position.set(P.foot.x-3,P.foot.y+7,0);
     plat.visible=!!P.legpress;if(P.legpress){plat.position.set(P.foot.x+.7071*7,P.foot.y+.7071*7,0);plat.rotation.z=45*Math.PI/180}
     glow(p);
     return J;
