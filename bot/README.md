@@ -1,12 +1,33 @@
 # Бот LIGHTWEIGHT
 
-1. Токен: @BotFather → `/newbot` (или возьми токен существующего бота: `/mybots` → API Token).
-2. Запуск локально или на сервере:
+Открывает мини-приложение кнопкой, присылает напоминания о тренировках и мотивацию.
+
+## Команды
+`/start`, `/workout`, `/motivation`, `/remind 18:30`, `/tz Europe/Moscow`, `/weekly on|off`, `/stop`, `/help`.
+У каждого пользователя свой часовой пояс и своё время напоминания.
+
+## Запуск за 5 минут
+1. В @BotFather: `/newbot` → получи токен (для существующего бота: `/mybots` → API Token).
+2. Адрес приложения: например `https://<логин>.github.io/fitpath/` (должен начинаться с `https://`).
+3. Локально:
    ```
    pip install -r requirements.txt
-   export BOT_TOKEN=... WEBAPP_URL=https://padishakh7777aa-cpu.github.io/fitpath/ TIMEZONE=Europe/Moscow
-   python bot.py
+   BOT_TOKEN=... WEBAPP_URL=https://... TIMEZONE=Europe/Moscow python bot.py
    ```
-3. Хостинг 24/7: Railway / Render / Fly.io / любой VPS. Используй Dockerfile, переменные окружения те же.
+4. Хостинг 24/7:
+   - **Render:** New → Blueprint, выбери репозиторий (файл `render.yaml`), задай `BOT_TOKEN` и `WEBAPP_URL`. Диск нужен, чтобы напоминания не пропадали при перезапуске.
+   - **Railway / Fly.io / VPS:** используй `Dockerfile` (или `Procfile`), те же переменные, том для `/data`.
 
-Бот сам задаёт команды и кнопку меню «Тренировки», которая открывает мини-приложение.
+## Переменные окружения
+| Переменная | Назначение |
+|---|---|
+| `BOT_TOKEN` | токен от BotFather |
+| `WEBAPP_URL` | адрес мини-приложения (https) |
+| `TIMEZONE` | пояс по умолчанию (по умолчанию UTC) |
+| `REMINDERS_FILE` | путь к файлу напоминаний |
+| `MAX_USERS` | лимит пользователей с напоминаниями (по умолчанию 5000) |
+
+## Тесты
+`pip install -r requirements-dev.txt && python -m pytest -q test_bot.py`
+
+Бот не хранит данные тренировок: они остаются в приложении и в облаке Telegram пользователя.

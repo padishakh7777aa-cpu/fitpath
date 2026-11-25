@@ -1,0 +1,16 @@
+services:
+  - type: worker
+    name: lightweight-bot
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: WEBAPP_URL
+        sync: false
+      - key: TIMEZONE
+        value: UTC
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
