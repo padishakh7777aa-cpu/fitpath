@@ -1,0 +1,13 @@
+{
+  "name": "lightweight-bot-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute lightweight --remote --file=schema.sql",
+    "setup": "node scripts/setup.mjs"
+  },
+  "devDependencies": { "wrangler": "^4.0.0" }
+}

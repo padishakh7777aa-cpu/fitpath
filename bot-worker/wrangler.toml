@@ -1,0 +1,20 @@
+name = "lightweight-bot"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Расписание: раз в минуту проверяем, кому пора напомнить
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+WEBAPP_URL = "https://padishakh7777aa-cpu.github.io/fitpath/"
+DEFAULT_TZ = "UTC"
+MAX_USERS = "3000"
+
+# База D1 (создаётся командой: npx wrangler d1 create lightweight, затем впиши database_id сюда)
+[[d1_databases]]
+binding = "DB"
+database_name = "lightweight"
+database_id = "ЗАМЕНИ-НА-ID-ИЗ-КОМАНДЫ-d1-create"
+
+# Секреты задаются командами:  npx wrangler secret put BOT_TOKEN   и   npx wrangler secret put WEBHOOK_SECRET
