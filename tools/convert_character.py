@@ -2,7 +2,7 @@ import bpy, sys, os, json
 base='/tmp/claude-0/-home-user/f40cd42b-4a07-5073-8ffa-a57d806934a0/scratchpad/'
 char=base+'dl/character.fbx'
 anims=json.loads(sys.argv[sys.argv.index('--')+1]) if '--' in sys.argv else {}
-out=base+'out/character.glb'
+out=base+'out/'+os.environ.get('OUT','character.glb')
 os.makedirs(base+'out',exist_ok=True)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -16,7 +16,7 @@ for im in bpy.data.images:
     print('IMG',im.name,im.size[:])
 
 # уменьшаем текстуры
-MAX=1024
+MAX=int(os.environ.get('TEX_MAX','1024'))
 for im in bpy.data.images:
     if im.size[0]>MAX:
         im.scale(MAX,MAX)
@@ -56,6 +56,6 @@ for name,act in actions.items():
     st=tr.strips.new(name,int(act.frame_range[0]),act)
     st.name=name
 arm.animation_data.action=None
-bpy.ops.export_scene.gltf(filepath=out,export_format='GLB',export_image_format='JPEG',export_jpeg_quality=82,
+bpy.ops.export_scene.gltf(filepath=out,export_format='GLB',export_image_format='JPEG',export_jpeg_quality=int(os.environ.get('JPEG_Q','82')),
     export_animations=True,export_animation_mode='NLA_TRACKS',export_apply=False,export_yup=True,export_texcoords=True,export_normals=True,export_materials='EXPORT',export_skins=True)
 print('SIZE',os.path.getsize(out))

@@ -100,15 +100,27 @@ async function setStage(key){
   const ph=$('#gph'),e=EX[key];
   if(!e){const tx=txFor(key),d=document.createElement('div');ph.textContent='';d.className='gph';d.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;text-align:center;padding:12px';d.innerHTML='<div style="font-size:56px">🏋️</div>'+(tx?'<div class="tag warn">'+tx.m+'</div>':'');wrap.appendChild(d);return}
   ph.textContent=e.phases[0];
-  const period=key==='plank'?5:3.6;let pl=null;
+  const period=key==='plank'?5:3.6;
+  const phase=p=>{const x=$('#gph');if(x)x.textContent=e.phases[p]};
+  const ready=!!(window.THREE&&typeof player3d==='function');
+  let pl2=null,sv2=null;
+  if(!ready){ // 3D ещё грузится — сразу показываем лёгкую 2D-анимацию
+    sv2=document.createElementNS('http://www.w3.org/2000/svg','svg');sv2.style.cssText='position:absolute;inset:0;width:100%;height:100%';
+    wrap.insertBefore(sv2,wrap.firstChild);pl2=player(sv2,key,{period});pl2.onPhase=phase;GD.player=pl2;
+  }
+  let pl=null;
   try{await load3D()}catch(err){}
   try{if(has3D()&&typeof mxHas==='function'){if(MX.ready)await MX.ready;
       if(mxHas(key))pl=await playerMx(wrap,key,{period,mus:MUS[key]});}}catch(err){pl=null}
   if(tk!==GD.token){if(pl)pl.stop();return}
   if(!pl){try{if(has3D())pl=player3d(wrap,key,{mus:MUS[key],period})}catch(err){pl=null}}
-  if(!pl){const sv=document.createElementNS('http://www.w3.org/2000/svg','svg');sv.style.cssText='width:100%;height:100%';wrap.insertBefore(sv,wrap.firstChild);pl=player(sv,key,{period})}
-  if(tk!==GD.token){pl.stop();return}
-  pl.setView&&pl.setView(35);pl.onPhase=p=>{const x=$('#gph');if(x)x.textContent=e.phases[p]};
+  if(tk!==GD.token){if(pl)pl.stop();return}
+  if(!pl){ // 3D недоступно — остаёмся на 2D
+    if(!pl2){sv2=document.createElementNS('http://www.w3.org/2000/svg','svg');sv2.style.cssText='position:absolute;inset:0;width:100%;height:100%';wrap.insertBefore(sv2,wrap.firstChild);pl2=player(sv2,key,{period});pl2.onPhase=phase;GD.player=pl2}
+    return;
+  }
+  if(pl2){pl2.stop();sv2.remove()}
+  pl.setView&&pl.setView(35);pl.onPhase=phase;
   GD.player=pl;
 }
 function stepLabel(g,steps){

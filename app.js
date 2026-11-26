@@ -1,4 +1,4 @@
-const APP_VERSION='1.0.0';
+const APP_VERSION='1.0.1';
 // ---- ленивая загрузка 3D (three.js, персонаж): подгружается в фоне после первого экрана ----
 const ASSET_Q=(()=>{try{const s=document.currentScript&&document.currentScript.src||'';return s.includes('?')?'?'+s.split('?')[1]:''}catch(e){return ''}})();
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=res;s.onerror=()=>rej(new Error('load '+src));document.head.appendChild(s)})}
@@ -102,17 +102,20 @@ function techScreen(){
 }
 function bindTech(){
   const els=[...document.querySelectorAll('[data-th]')];
-  let ok=false;
   const fill=(e,url)=>{const im=new Image();im.src=url;e.innerHTML='';e.appendChild(im)};
-  const svgThumb=(e,k)=>{const sv=document.createElementNS('http://www.w3.org/2000/svg','svg');e.appendChild(sv);const f=makeFigure(sv);f.draw(k==='plank'?0:0.5,k)};
+  const svgThumb=(e,k)=>{const sv=document.createElementNS('http://www.w3.org/2000/svg','svg');e.innerHTML='';e.appendChild(sv);const f=makeFigure(sv);f.draw(k==='plank'?0:0.5,k)};
+  // сразу лёгкие 2D-превью, потом заменяем 3D-картинками, когда движок догрузится
+  els.forEach(e=>{try{svgThumb(e,e.dataset.th)}catch(err){}});
   (async()=>{
-    try{await load3D();ok=has3D();if(ok&&MX.ready)await MX.ready}catch(e){ok=false}
+    let ok=false;
+    try{await load3D();ok=has3D();if(ok&&MX.ready)await MX.ready}catch(err){ok=false}
+    if(!ok)return;
     for(const e of els){
       if(!document.body.contains(e))return; // ушли с экрана
       const k=e.dataset.th;
       try{
-        if(ok&&typeof mxHas==='function'&&mxHas(k)){try{fill(e,await thumbMx(k,MUS[k]));await new Promise(r=>setTimeout(r,16));continue}catch(err){console.warn('thumbMx',err)}}
-        if(ok)fill(e,thumb3d(k,MUS[k]));else svgThumb(e,k);
+        if(typeof mxHas==='function'&&mxHas(k)){try{fill(e,await thumbMx(k,MUS[k]));await new Promise(r=>setTimeout(r,16));continue}catch(err){console.warn('thumbMx',err)}}
+        fill(e,thumb3d(k,MUS[k]));
       }catch(err){}
       await new Promise(r=>setTimeout(r,16));
     }
@@ -145,7 +148,7 @@ function exScreen(k){
 function bindEx(k){
   const e=EX[k];
   $('#back').onclick=()=>{S.ex=null;render()};
-  const wrap=$('#figwrap');let pl;
+  const wrap=$('#figwrap');let pl=null,pl2=null,sv2=null;
   const period=k==='plank'?5:3.6;
   const wire=()=>{
     activePlayer=pl;
@@ -154,20 +157,33 @@ function bindEx(k){
     $('#pp').onclick=function(){pl.paused=!pl.paused;this.textContent=pl.paused?'▶ Продолжить':'⏸ Пауза';hap()};
     $('#sp').onclick=function(){pl.speed=pl.speed===1?0.4:1;this.textContent=pl.speed===1?'🐢 Медленно':'🐇 Обычная';hap()};
   };
-  const fallback=()=>{
-    if(S.ex!==k||activePlayer)return;
-    try{if(has3D()){pl=player3d(wrap,k,{mus:MUS[k],period});pl.setView(35);wire();return}}catch(err){}
-    const sv=document.createElementNS('http://www.w3.org/2000/svg','svg');sv.style.cssText='width:100%;height:100%';wrap.insertBefore(sv,wrap.firstChild);pl=player(sv,k,{period});$('#views').style.display='none';wire();
+  // мгновенная 2D-анимация: показывается, пока 3D догружается (или если 3D недоступно)
+  const show2D=()=>{
+    if(pl2||S.ex!==k)return;
+    sv2=document.createElementNS('http://www.w3.org/2000/svg','svg');sv2.style.cssText='position:absolute;inset:0;width:100%;height:100%';
+    wrap.insertBefore(sv2,wrap.firstChild);pl2=player(sv2,k,{period});pl=pl2;$('#views').style.display='none';wire();
   };
-  const ld=document.createElement('div');ld.className='hintdrag';ld.style.top='45%';ld.style.fontSize='13px';ld.textContent='Загружаю 3D…';wrap.appendChild(ld);
-  const start=async()=>{
+  const swapTo=p=>{
+    if(S.ex!==k){p.stop();return}
+    if(pl2){pl2.stop();sv2.remove();pl2=null;sv2=null}
+    $('#views').style.display='';pl=p;pl.setView&&pl.setView(35);wire();
+  };
+  const try3D=async()=>{
     try{if(typeof MX!=='undefined'&&MX.ready)await MX.ready}catch(err){}
-    if(S.ex!==k){ld.remove();return}
-    if(has3D()&&typeof mxHas==='function'&&mxHas(k)){
-      playerMx(wrap,k,{period,mus:MUS[k]}).then(p=>{ld.remove();if(S.ex!==k){p.stop();return}pl=p;pl.setView(35);wire();}).catch(err=>{ld.remove();console.warn('mx fail',err);fallback()});
-    }else{ld.remove();fallback()}
+    if(S.ex!==k)return;
+    if(has3D()){
+      try{if(typeof mxHas==='function'&&mxHas(k)){swapTo(await playerMx(wrap,k,{period,mus:MUS[k]}));return}}catch(err){console.warn('mx fail',err)}
+      try{swapTo(player3d(wrap,k,{mus:MUS[k],period}));return}catch(err){}
+    }
+    show2D();
   };
-  load3D().then(start,()=>{ld.remove();fallback()});
+  if(window.THREE&&typeof player3d==='function'){
+    const ld=document.createElement('div');ld.className='hintdrag';ld.style.top='45%';ld.style.fontSize='13px';ld.textContent='Загружаю…';wrap.appendChild(ld);
+    try3D().finally(()=>ld.remove());
+  }else{
+    show2D();
+    load3D().then(try3D,()=>{});
+  }
   document.querySelectorAll('#views button').forEach(b=>b.onclick=()=>{hap();
     document.querySelectorAll('#views button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
     if(!pl)return;if(b.dataset.v==='spin'){pl.spin=!pl.spin}else{pl.setView(+b.dataset.v)}
@@ -332,5 +348,5 @@ render();cloudSync();
 // кэш для быстрых повторных запусков (где поддерживается)
 try{if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 // фоновая подгрузка 3D после первого экрана (если нет режима экономии трафика)
-setTimeout(()=>{try{if(!(navigator.connection&&navigator.connection.saveData))load3D().catch(()=>{})}catch(e){}},2500);
+setTimeout(()=>{try{if(!(navigator.connection&&navigator.connection.saveData))load3D().catch(()=>{})}catch(e){}},900);
 setTimeout(()=>{const s=$('#splash');if(s){s.classList.add('off');setTimeout(()=>s.remove(),500)}},1300);

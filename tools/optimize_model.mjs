@@ -1,0 +1,12 @@
+import {NodeIO} from '@gltf-transform/core';
+import {EXTMeshoptCompression,KHRMeshQuantization} from '@gltf-transform/extensions';
+import {quantize,meshopt,dedup,prune} from '@gltf-transform/functions';
+import {MeshoptEncoder,MeshoptDecoder} from 'meshoptimizer';
+import fs from 'fs';
+await MeshoptEncoder.ready;await MeshoptDecoder.ready;
+const [,, inp, outp, level] = process.argv;
+const io=new NodeIO().registerExtensions([EXTMeshoptCompression,KHRMeshQuantization]).registerDependencies({'meshopt.encoder':MeshoptEncoder,'meshopt.decoder':MeshoptDecoder});
+const doc=await io.read(inp);
+await doc.transform(dedup(),prune(),quantize({quantizePosition:14,quantizeNormal:10,quantizeTexcoord:12,quantizeWeight:8}),meshopt({encoder:MeshoptEncoder,level:level||'high'}));
+await io.write(outp,doc);
+console.log(outp,fs.statSync(outp).size);

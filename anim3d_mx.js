@@ -1,10 +1,18 @@
 // Реалистичный персонаж (Mixamo) в одном GLB с запечёнными анимациями.
 // Чтобы добавить упражнения: скачай анимацию из Mixamo (FBX, Without Skin) и запиши в models/manifest.json.
-const MX={enabled:false,character:'models/character.glb',clips:{},scale:1,gripSign:-1};
+const MX={enabled:false,character:'models/character.glb',characterLite:'models/character_lite.glb',clips:{},scale:1,gripSign:-1};
+// выбор модели по устройству и сети: лёгкая (0,75 МБ) по умолчанию, полная — только на быстрой сети и достаточной памяти
+function pickCharacter(){
+  try{
+    const c=navigator.connection||{},mem=navigator.deviceMemory||0;
+    const fast=c.effectiveType==='4g'&&!c.saveData&&mem>=4;
+    return fast?MX.character:MX.characterLite;
+  }catch(e){return MX.characterLite}
+}
 function mxHas(key){return !!(MX.enabled&&window.THREE&&THREE.GLTFLoader&&THREE.SkeletonUtils)}
 let _mxG=null;
 function mxLoad(){
-  if(!_mxG)_mxG=new Promise((res,rej)=>new THREE.GLTFLoader().load(MX.character,res,undefined,rej));
+  if(!_mxG)_mxG=new Promise((res,rej)=>{const L=new THREE.GLTFLoader();if(THREE.MeshoptDecoder)L.setMeshoptDecoder(THREE.MeshoptDecoder);L.load(pickCharacter(),res,undefined,rej)});
   return _mxG;
 }
 MX.ready=(async()=>{try{const r=await fetch('models/manifest.json');if(!r.ok)return;const m=await r.json();

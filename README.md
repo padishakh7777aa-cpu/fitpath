@@ -18,7 +18,7 @@
 - `data.js`, `programs.js`, `knowledge.js` — упражнения, программы, знания.
 - `anim.js` (2D), `anim3d.js` (3D-атлет), `anim3d_mx.js` (реалистичный персонаж и риг).
 - `models/` — `character.glb`, анимации Mixamo (FBX), `manifest.json`.
-- `tools_convert_character.py` — конвертация персонажа Mixamo в лёгкий GLB (Blender `bpy`).
+- `tools/` — подготовка модели: `convert_character.py` (Blender `bpy`: FBX Mixamo → GLB с анимациями и сжатыми текстурами), `optimize_model.mjs` (квантизация и сжатие meshopt, GLB уменьшается в 2–3 раза).
 - `guide.js` — тренировка с гидом (шаги, вес, отдых, прогрессия).
 - `app2.js` — экраны: Сегодня, меню, прогресс, достижения, О приложении.
 - `sw.js` — service worker: кэш для быстрых повторных запусков и работы без сети.
@@ -32,8 +32,9 @@
 
 ## Как сменить персонажа / добавить анимации
 1. Скачай модель из Mixamo (FBX Binary, With Skin, T-pose) и анимации (Without Skin).
-2. Запусти конвертацию: `python tools_convert_character.py -- '{"squat":"squat.fbx", ...}'` (нужен `pip install bpy`).
-3. Положи `character.glb` в `models/` и впиши имена клипов в `models/manifest.json`.
+2. Конвертация: `TEX_MAX=1024 python tools/convert_character.py -- '{"squat":"squat.fbx", ...}'` (нужен `pip install bpy`); лёгкий вариант: `TEX_MAX=512 JPEG_Q=70 OUT=character_lite.glb ...`.
+3. Сжатие: `node tools/optimize_model.mjs in.glb out.glb` (нужны `@gltf-transform/*` и `meshoptimizer`).
+4. Положи `character.glb` и `character_lite.glb` в `models/` и впиши имена клипов в `models/manifest.json`.
 Упражнения без клипа анимируются расчётными позами на том же скелете.
 
 ## Производительность и надёжность
@@ -46,6 +47,7 @@
 Увеличь номер `?v=N` у скриптов в `index.html` (и версию `APP_VERSION` в `app.js` при необходимости). Запусти автопроверки из `tests/`.
 
 ## Показатели
-- Первый экран: ~70 КБ (gzip), без 3D. 3D-движок (~200 КБ) и персонаж (~2 МБ) подгружаются в фоне и кэшируются.
+- Первый экран: ~70 КБ (gzip), без 3D. 3D-движок (~200 КБ) и персонаж (0,75 МБ лёгкий / 1,2 МБ полный, выбирается по сети и памяти устройства) подгружаются в фоне и кэшируются.
+- Пока 3D грузится, сразу показывается 2D-анимация: на эмулированной 3G она видна за 0,1–0,4 с. 3D догружается за ~12 с на Fast 3G.
 - Доступность: аудит axe-core (WCAG 2 A/AA) без нарушений; контраст основного текста 17,6:1, вспомогательного не ниже 6,2:1.
 - Автопроверки: 48 тренировочных дней, 630 экранов, 6 тестов бота.
