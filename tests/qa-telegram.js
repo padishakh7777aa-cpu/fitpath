@@ -28,6 +28,7 @@ addEventListener('message',e=>{
 (async()=>{
   const b=await chromium.launch({args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
   const ctx=await b.newContext({viewport:{width:390,height:840},serviceWorkers:'block'});
+  await ctx.addInitScript(()=>{window.__no3d=true;window.has3D=()=>false}); // 3D этому тесту не нужен
   await ctx.route('https://telegram.org/js/telegram-web-app.js',r=>r.fulfill({contentType:'application/javascript',body:SDK}));
   await ctx.route(BASE+'/host.html',r=>r.fulfill({contentType:'text/html',body:HOST}));
   const pg=await ctx.newPage();const errs=[];pg.on('pageerror',x=>errs.push('PE '+x.message));
@@ -36,7 +37,6 @@ addEventListener('message',e=>{
   await pg.goto(BASE+'/host.html');await pg.waitForTimeout(2500);
   const fr=()=>pg.frames().find(f=>/index\.html/.test(f.url()));
   const ev=(t)=>pg.evaluate(t=>window.events.filter(e=>e.eventType===t).map(e=>e.eventData),t);
-  await fr().evaluate(()=>{window.__no3d=true});
 
   console.log('Запуск и тема');
   ok('SDK загружен и определил версию',await fr().evaluate(()=>Telegram.WebApp.version==='8.0'&&Telegram.WebApp.platform==='android'));

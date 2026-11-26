@@ -6,6 +6,7 @@ on:
 jobs:
   app:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,10 +17,11 @@ jobs:
         run: nohup python3 -m http.server 8123 >/dev/null 2>&1 &
       - run: sleep 2 && node tests/qa-screens.js
       - run: node tests/qa-workouts.js
-      - run: node tests/qa-telegram.js
-      - run: node tests/qa-a11y.js
+      - run: timeout 240 node tests/qa-telegram.js
+      - run: timeout 240 node tests/qa-a11y.js
   bot-worker:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults: { run: { working-directory: bot-worker } }
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +31,7 @@ jobs:
       - run: npm test
   bot-python:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults: { run: { working-directory: bot } }
     steps:
       - uses: actions/checkout@v4
