@@ -451,6 +451,7 @@ function aboutScreen(){
   <div class="card legal"><b>Конфиденциальность</b>
    <p>Мы не собираем и не передаём твои персональные данные, не используем рекламу и аналитику.</p>
    <p>Данные тренировок, питания и прогресса хранятся на твоём устройстве и в облачном хранилище Telegram, которое доступно только тебе. Твоё имя из Telegram используется только для приветствия на экране.</p></div>
+  <div class="card"><b>Документы</b><div class="hint" style="margin:4px 0 8px"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Политика конфиденциальности</a></div></div>
   <div class="card"><b>Твои данные</b>
    <div class="hint" style="margin:4px 0 8px">Скопируй резервную копию или полностью удали данные.</div>
    <button class="btn ghost" id="exp">📋 Скопировать данные</button>
