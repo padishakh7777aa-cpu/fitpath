@@ -20,6 +20,7 @@ jobs:
       - run: timeout 240 node tests/qa-telegram.js
       - run: timeout 240 node tests/qa-a11y.js
       - run: node tests/volume-audit.js
+      - run: node tests/biomech-audit.js
   bot-worker:
     runs-on: ubuntu-latest
     timeout-minutes: 10

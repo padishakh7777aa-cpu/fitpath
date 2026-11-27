@@ -8,7 +8,8 @@ function curProg(){let p=progById(S.prog);if(!p||false){p=PROGS.find(x=>x.lvl===
 const lastW=k=>{const a=S.log[k];return a&&a.length?a[a.length-1].w:''};
 
 /* ---------- План ---------- */
-const DELOAD={'b-full3':[5,9],'b-ul4':[6,12],'a-ul4':[5,10],'a-ppl6':[4,8],'a-arnold':[4,8],'a-pb5':[6,12],'p-heavy':[6,12],'p-hit':[7],'p-dup':[4,8,12],'p-spec':[7],'p-peak':[4,8,12]};
+// Плановые недели разгрузки только там, где они встроены в сам цикл. В остальных программах разгрузка «по состоянию».
+const DELOAD={'a-str4':[4,8]};
 function weekInfo(P){
   let st=store.get('pstart',null);
   if(!st||st.id!==P.id){st={id:P.id,ts:Date.now()};store.set('pstart',st)}
@@ -49,7 +50,7 @@ function planScreen(){
   <details class="card"><summary>📋 Весь курс «${P.name}»</summary>
    ${P.days.map((d,di)=>`<div style="margin-top:10px"><b>${d.n}</b> <span class="hint">· ${d.focus}</span>
     <div class="hint">${d.ex.map(e=>hasAnim(e.id)?`<a href="#" data-ex="${e.id}" style="color:var(--accent);text-decoration:none">${exName(e.id)}</a>`:exName(e.id)).join(' · ')}</div></div>`).join('')}</details>
-  <details class="card"><summary>ℹ️ О курсе</summary><p>${P.desc}</p><p class="hint"><b>Как растёт нагрузка:</b> ${P.prog}</p>
+  <details class="card"><summary>ℹ️ О курсе</summary><p>${P.desc}</p><p class="hint"><b>Как растёт нагрузка:</b> ${P.prog}</p><p class="hint"><b>Научная основа:</b> ${P.science||''}</p>
    <button class="btn ghost small" id="pickprog">🔁 Другой курс</button></details>`;
 }
 function progLibrary(){
@@ -163,14 +164,19 @@ function startRest(sec){
 }
 
 /* ---------- Механика ---------- */
-const lv=l=>`<span class="tag ${l==='A'?'ok':l==='B'?'warn':'bad'}">уровень ${l}</span>`;
+const gradeTag=g=>{const x=GRADE[g]||GRADE.opinion;return `<span class="tag ${x[1]}">${x[0]}</span>`};
+const srcList=ids=>`<ol class="src">${ids.map(id=>{const s=SRC[id];if(!s)return '';return `<li>${s.u?`<a href="${s.u}" target="_blank" rel="noopener">${s.t}</a>`:s.t}${s.n?` <i>(${s.n})</i>`:''}</li>`}).join('')}</ol>`;
 function mechScreen(){
-  return `<h1>Механика роста</h1><p class="hint">Научная база: как устроены рычаги, нагрузка и прогрессия. Уровень доказательности: A — сильные данные, B — умеренные.</p>
-  ${MECH.map(m=>`<details class="card"><summary>${m.ico} ${m.t} ${lv(m.lvl)}</summary>${m.p.map(t=>`<p class="hint" style="color:var(--text)">${t}</p>`).join('')}</details>`).join('')}
-  <h2>Объём: подходов в неделю на группу</h2><div class="card"><table><tr><th>Группа</th><th>MEV</th><th>MAV</th><th>MRV</th></tr>
-  ${VOLUME.map(v=>`<tr><td>${v[0]}</td><td>${v[1]}</td><td><b>${v[2]}</b></td><td>${v[3]}</td></tr>`).join('')}</table>
-  <div class="hint" style="margin-top:6px">MEV — минимум для роста, MAV — рабочий диапазон, MRV — предел восстановления. Начинай с MEV+2 и поднимай по неделям.</div></div>
-  <h2>Недельная схема объёма</h2><div class="card"><ul><li>Неделя 1: старт, RIR 3.</li><li>Недели 2–4: +1 подход на группу в неделю, RIR 2→1.</li><li>Неделя 5: пик объёма, RIR 0–1 на изоляции.</li><li>Неделя 6: разгрузка (−40–50% объёма).</li></ul></div>`;
+  return `<h1>Как растут мышцы</h1>
+  <p class="hint">Здесь только то, что подтверждено исследованиями, с оценкой надёжности и ссылками. Где данные расходятся или это мнение экспертов, так и написано.</p>
+  ${MECH.map(m=>`<details class="card"><summary>${m.ico} ${m.t} ${gradeTag(m.grade)}</summary>
+   <b>Что показывают исследования</b><ul>${m.find.map(t=>`<li>${t}</li>`).join('')}</ul>
+   <b>Как использовать</b><ul>${m.use.map(t=>`<li>${t}</li>`).join('')}</ul>
+   <b>Ограничения</b><ul class="hint">${m.limits.map(t=>`<li>${t}</li>`).join('')}</ul>
+   <b>Источники</b>${srcList(m.src)}</details>`).join('')}
+  <h2>Чему не стоит верить</h2>
+  ${MYTHS.map(([t,d])=>`<details class="card"><summary>${t}</summary><p class="hint" style="color:var(--text)">${d}</p></details>`).join('')}
+  <div class="hint">Оценка надёжности — моя классификация по типу источника: метаанализы, отдельные исследования, расходящиеся данные, мнение экспертов. Это не заменяет консультацию тренера или врача.</div>`;
 }
 function mechHtml(k){
   const m=EXM[k];if(!m)return '';
@@ -183,20 +189,20 @@ function mechHtml(k){
 function bioScreen(){
   const R=S.ready;
   return `<h1>Биохакинг</h1><p class="hint">Инструменты оптимизации восстановления и работоспособности. Здесь только то, что имеет разумные доказательства.</p>
-  <div class="card"><b>⚡ Чек готовности сегодня</b>
+  <div class="card"><b>⚡ Чек готовности сегодня</b><div class="hint">Простая эвристика на основе твоих ответов, не проверенная научная шкала.</div>
    <label>Сон, часов: <b id="v_sleep">7.5</b></label><input type="range" id="r_sleep" min="3" max="10" step="0.5" value="7.5">
    <label>Крепатура/усталость в мышцах: <b id="v_sore">2</b> (1 нет — 5 сильная)</label><input type="range" id="r_sore" min="1" max="5" value="2">
    <label>Стресс: <b id="v_str">2</b> (1 нет — 5 высокий)</label><input type="range" id="r_str" min="1" max="5" value="2">
    <label>Мотивация: <b id="v_mot">4</b> (1 нет — 5 высокая)</label><input type="range" id="r_mot" min="1" max="5" value="4">
    <label>Пульс покоя vs обычно: <b id="v_rhr">0</b> уд/мин</label><input type="range" id="r_rhr" min="-5" max="15" value="0">
    <button class="btn" id="ready" style="margin-top:10px">Оценить готовность</button><div id="readyout"></div></div>
-  <div class="card"><b>🕐 Протокол дня</b><div class="hint">Укажи время — получишь расписание кофеина, питания и сна.</div>
+  <div class="card"><b>🕐 Протокол дня</b><div class="hint">Практическое расписание на основе обычных рекомендаций (кофеин не поздно, еда до и после тренировки). Это не научный протокол.</div>
    <div class="grid2"><div><label>Подъём</label><input type="time" id="p_wake" value="07:00"></div><div><label>Тренировка</label><input type="time" id="p_train" value="18:00"></div></div>
    <label>Отбой</label><input type="time" id="p_bed" value="23:00"><button class="btn" id="proto" style="margin-top:10px">Построить расписание</button><div id="protoout"></div></div>
-  ${BIO.map(b=>`<details class="card"><summary>${b.ico} ${b.t} ${lv(b.lvl)}</summary>${b.p.map(t=>`<p class="hint" style="color:var(--text)">${t}</p>`).join('')}</details>`).join('')}
+  ${BIO.map(m=>`<details class="card"><summary>${m.ico} ${m.t} ${gradeTag(m.grade)}</summary><b>Что известно</b><ul>${m.find.map(t=>`<li>${t}</li>`).join('')}</ul><b>Как использовать</b><ul>${m.use.map(t=>`<li>${t}</li>`).join('')}</ul><b>Ограничения</b><ul class="hint">${m.limits.map(t=>`<li>${t}</li>`).join('')}</ul>${m.src.length?`<b>Источники</b>${srcList(m.src)}`:''}</details>`).join('')}
   <h2>Анализы: на что смотреть</h2><div class="card"><table><tr><th>Показатель</th><th>Ориентир</th></tr>${LABS.map(l=>`<tr><td><b>${l[0]}</b><div class="hint">${l[2]}</div></td><td>${l[1]}</td></tr>`).join('')}</table>
   <div class="hint" style="margin-top:6px">Нормы зависят от лаборатории, пола и возраста. Интерпретировать результаты должен врач. Сдавай раз в год и при ухудшении самочувствия.</div></div>
-  <h2>Добавки по доказательности</h2>${BIOSUP.map(t=>`<div class="card"><span class="tag ${t.tier==='A'?'ok':t.tier==='B'?'warn':'bad'}">Уровень ${t.tier}</span><table>${t.items.map(i=>`<tr><td><b>${i[0]}</b></td><td>${i[1]}<div class="hint">${i[2]}</div></td></tr>`).join('')}</table></div>`).join('')}
+  <h2>Добавки по доказательности</h2>${BIOSUP.map(t=>`<div class="card">${gradeTag(t.tier)}<table>${t.items.map(i=>`<tr><td><b>${i[0]}</b></td><td>${i[1]}<div class="hint">${i[2]}${i[3]&&SRC[i[3]]?` <a href="${SRC[i[3]].u||'#'}" target="_blank" rel="noopener" style="color:var(--accent)">источник</a>`:''}</div></td></tr>`).join('')}</table></div>`).join('')}
   <div class="hint">Перед добавками посоветуйся с врачом, особенно при хронических болезнях и приёме лекарств.</div>`;
 }
 function bindBio(){
@@ -309,7 +315,7 @@ function shareSummary(){
 /* ---------- Подбор программы ---------- */
 const GOALS=[['mass','💪 Набрать массу'],['strength','🏋️ Стать сильнее'],['cut','🔥 Похудеть и подтянуться']];
 function recommend(goal,days,lvl){
-  const strength=['a-pb5','p-peak','p-dup','b-full3','p-heavy'],mass=['a-ppl6','a-arnold','a-ul4','b-ul4','p-heavy','p-spec','p-hit'],cut=['a-ul4','b-full3','b-ul4','a-ppl6','p-dup'];
+  const strength=['a-str4','p-ul5','a-ul4','b-fb3','a-fb3'],mass=['a-ul4','a-fb3','a-ppl6','p-ul5','b-ul4','b-fb3'],cut=['b-fb3','a-fb3','a-ul4','b-ul4','p-fb2'];
   const pref={mass,strength,cut}[goal]||mass;
   return PROGS.map(p=>{
     let sc=0;const order=['beginner','advanced','pro'];

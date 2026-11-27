@@ -1,6 +1,6 @@
 /* ===== Тренировка с гидом: приложение ведёт по шагам, человеку остаётся только делать ===== */
 const GD={player:null,key:null,rest:null,timer:null,token:0};
-const RATIO={squat:[.6,.9,1.2],bench:[.5,.8,1],deadlift:[.7,1.1,1.5],ohp:[.35,.55,.7],row:[.4,.6,.8],rdl:[.5,.8,1],curl:[.2,.3,.4],hipthrust:[.6,1,1.5],calf:[.5,.8,1],lunge:[.3,.45,.6],pulldown:[.5,.7,.9],pushdown:[.25,.4,.5]};
+const RATIO={squat:[.6,.9,1.2],bench:[.5,.8,1],deadlift:[.7,1.1,1.5],ohp:[.35,.55,.7],row:[.4,.6,.8],rdl:[.5,.8,1],curl:[.2,.3,.4],hipthrust:[.6,1,1.5],calf:[.5,.8,1],lunge:[.3,.45,.6],pulldown:[.5,.7,.9],pushdown:[.25,.4,.5],ohext:[.15,.25,.35]};
 const BWEX=['pushup','plank','pullup','dips'];
 const lvI=()=>({beginner:0,advanced:1,pro:2}[S.level]||0);
 const r25=x=>Math.max(0,Math.round(x/2.5)*2.5);
@@ -28,7 +28,7 @@ function suggestWeight(e,key){
   if(a.length){
     const lastD=a[a.length-1].d,sess=a.filter(x=>x.d===lastD),w=Math.max(...sess.map(x=>x.w)),pr=parseR(e.r);
     const hard=sess.some(x=>x.fb==='hard'),ok=sess.every(x=>x.r>=pr.hi)&&!hard;
-    const inc=['curl','pushdown'].includes(key)?1.25:2.5;
+    const inc=['curl','pushdown','ohext'].includes(key)?1.25:2.5;
     return ok?w+inc:hard?Math.max(0,w-2.5):w;
   }
   const ratio=RATIO[key];
@@ -222,7 +222,7 @@ function finishGuided(){
     const e=D.ex[+ei],k=exKey(e.id),a=S.log[k]||(S.log[k]=[]),pr=parseR(e.r);
     by[ei].forEach(x=>{tonnage+=x.w*x.r;a.push({d:today().slice(5),ts:Date.now(),w:x.w,r:x.r,p:P.id,fb:x.fb||'ok'})});
     const ok=by[ei].length>=e.s&&by[ei].every(x=>x.r>=pr.hi&&x.fb!=='hard');
-    if(ok&&!BWEX.includes(k))sug.push(`${exName(e.id)} → +${['curl','pushdown'].includes(k)?'1,25':'2,5'} кг`);
+    if(ok&&!BWEX.includes(k))sug.push(`${exName(e.id)} → +${['curl','pushdown','ohext'].includes(k)?'1,25':'2,5'} кг`);
     if(by[ei].some(x=>x.fb==='hard'))sug.push(`${exName(e.id)}: было тяжело — в следующий раз вес чуть ниже`);
   });
   store.set('log',S.log);S.done[today()]=D.n;store.set('done',S.done);

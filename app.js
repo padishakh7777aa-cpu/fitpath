@@ -1,4 +1,4 @@
-const APP_VERSION='1.0.2';
+const APP_VERSION='2.0.0';
 // ---- ленивая загрузка 3D (three.js, персонаж): подгружается в фоне после первого экрана ----
 const ASSET_Q=(()=>{try{const s=document.currentScript&&document.currentScript.src||'';return s.includes('?')?'?'+s.split('?')[1]:''}catch(e){return ''}})();
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=res;s.onerror=()=>rej(new Error('load '+src));document.head.appendChild(s)})}
@@ -161,12 +161,12 @@ function bindEx(k){
   const show2D=()=>{
     if(pl2||S.ex!==k)return;
     sv2=document.createElementNS('http://www.w3.org/2000/svg','svg');sv2.style.cssText='position:absolute;inset:0;width:100%;height:100%';
-    wrap.insertBefore(sv2,wrap.firstChild);pl2=player(sv2,k,{period});pl=pl2;$('#views').style.display='none';wire();
+    wrap.insertBefore(sv2,wrap.firstChild);pl2=player(sv2,k,{period});pl=pl2;window.__pl=pl;$('#views').style.display='none';wire();
   };
   const swapTo=p=>{
     if(S.ex!==k){p.stop();return}
     if(pl2){pl2.stop();sv2.remove();pl2=null;sv2=null}
-    $('#views').style.display='';pl=p;pl.setView&&pl.setView(35);wire();
+    $('#views').style.display='';pl=p;window.__pl=pl;pl.setView&&pl.setView(35);wire();
   };
   const try3D=async()=>{
     try{if(typeof MX!=='undefined'&&MX.ready)await MX.ready}catch(err){}

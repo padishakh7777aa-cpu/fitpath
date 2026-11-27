@@ -4,7 +4,7 @@ function has3D(){try{const c=document.createElement('canvas');return !!(window.T
 const CAM={ // цель камеры и дистанция по упражнениям
   dips:{tx:0,ty:120,d:370},pulldown:{tx:0,ty:115,d:380},hipthrust:{tx:-10,ty:40,d:300},pushdown:{tx:5,ty:100,d:340},
   incline:{tx:-25,ty:60,d:320},legpress:{tx:10,ty:65,d:330},lateral:{tx:0,ty:100,d:340},
-  skull:{tx:-25,ty:50,d:300},legext:{tx:15,ty:50,d:330},legcurl:{tx:15,ty:50,d:330},facepull:{tx:25,ty:105,d:350},
+  skull:{tx:-25,ty:50,d:300},ohext:{tx:0,ty:115,d:340},legext:{tx:15,ty:50,d:330},legcurl:{tx:15,ty:50,d:330},facepull:{tx:25,ty:105,d:350},
   default:{tx:-5,ty:88,d:330},pushup:{tx:-65,ty:40,d:360},plank:{tx:-65,ty:40,d:360},
   bench:{tx:-25,ty:50,d:300},pullup:{tx:0,ty:120,d:400},bridge:{tx:-10,ty:30,d:280},
   ohp:{tx:0,ty:105,d:380},curl:{tx:0,ty:90,d:320},row:{tx:0,ty:70,d:320},calf:{tx:0,ty:80,d:330}
@@ -221,7 +221,8 @@ function player3d(wrap,key,opts={}){
   const ath=Athlete3D(key,{mus:opts.mus,bodyless:opts.bodyless});
   if(opts.setup)opts.setup(ath.scene);
   const cam=new THREE.PerspectiveCamera(32,w/h,5,3000);
-  const st={speed:1,paused:false,t:0,last:performance.now(),reps:0,cyc:0,onPhase:null,onRep:null,period:opts.period||3.6,
+  const tp=opts.tempo===false?null:tempoFor(key);
+  const st={speed:1,paused:false,t:0,last:performance.now(),reps:0,cyc:0,onPhase:null,onRep:null,period:tp?tp.T:(opts.period||3.6),
     az:.5,azT:.5,pol:.17,spin:false,drag:false,raf:0};
   let px=0;
   cv.addEventListener('pointerdown',e=>{st.drag=true;px=e.clientX;cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
@@ -231,9 +232,9 @@ function player3d(wrap,key,opts={}){
   function loop(now){
     const dt=Math.min(.05,(now-st.last)/1000);st.last=now;
     if(!st.paused){
-      st.t+=dt*st.speed;const c=st.t/st.period,cyc=c-Math.floor(c),p=.5-.5*Math.cos(2*Math.PI*cyc);
+      st.t+=dt*st.speed;const c=st.t/st.period,cyc=c-Math.floor(c),p=tp?tp.p(cyc):.5-.5*Math.cos(2*Math.PI*cyc);
       const J=ath.pose(p);if(opts.onPose)opts.onPose(J,ath);
-      const ph=cyc<.5?0:1;if(ph!==st.cyc){st.cyc=ph;st.onPhase&&st.onPhase(ph)}
+      const ph=tp?tp.ph(cyc):(cyc<.5?0:1);if(ph!==st.cyc){st.cyc=ph;st.onPhase&&st.onPhase(ph)}
       const n=Math.floor(c);if(n!==st.reps){st.reps=n;st.onRep&&st.onRep(n)}
     }
     if(st.spin){st.azT+=dt*.7}

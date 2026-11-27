@@ -59,6 +59,8 @@ const POSES={
     return {foot,hip,shoulder:s,hand:{x:hip.x-8,y:hip.y+12},legDir:-1,armDir:1,footAng:-135,legpress:true,cx:150}},
   lateral:p=>{const hip={x:-2,y:89},s=sh(hip,3);
     return {foot:{x:0,y:0},hip,shoulder:s,hand:{x:s.x,y:s.y-60},legDir:1,armDir:1,lateral:true,lat:p,cx:150}},
+  ohext:p=>{const hip={x:-2,y:89},s=sh(hip,3),el={x:s.x+3,y:s.y+34},ph=L(0,140,p)*Math.PI/180;
+    return {foot:{x:0,y:0},hip,shoulder:s,elbow:el,hand:{x:el.x-30*Math.sin(ph),y:el.y+30*Math.cos(ph)},legDir:1,armDir:1,plate:true,cx:150}},
   skull:p=>{const hip={x:0,y:30},sh0={x:-55,y:30},el={x:-55,y:62},ph=L(0,100,p)*Math.PI/180;
     return {foot:{x:38,y:0},hip,shoulder:sh0,elbow:el,hand:{x:el.x-30*Math.sin(ph),y:el.y+30*Math.cos(ph)},legDir:1,armDir:1,plate:true,bench:true,cx:175}},
   legext:p=>{const hip={x:-8,y:48},kn={x:37,y:44},ps=L(-85,-6,p)*Math.PI/180,s=sh(hip,-5);
@@ -198,18 +200,50 @@ function makeFigure(svg){
 }
 
 // Проигрыватель: тайм-цикл, пауза, скорость, подписи фаз
+/* Темп из карточки упражнения (EX.tempo) управляет скоростью анимации: фаза 1 · пауза · фаза 2.
+   Формат: «2 сек вниз · пауза · 1 сек вверх». Первая часть соответствует первой фазе (EX.phases[0]). */
+function parseTempo(str){
+  if(!str||/Статика/i.test(str))return null;
+  const seg=str.split('·').map(s=>s.trim()),mv=[];let pause=0;
+  seg.forEach(s=>{
+    if(/пауза/i.test(s)){const m=s.match(/(\d+(?:[.,]\d+)?)/);pause=m?+m[1].replace(',','.'):1;return}
+    const r=s.match(/(\d+(?:[.,]\d+)?)\s*[–-]\s*(\d+(?:[.,]\d+)?)/),n=s.match(/(\d+(?:[.,]\d+)?)/);
+    mv.push(r?(+r[1].replace(',','.')+ +r[2].replace(',','.'))/2:n?+n[1].replace(',','.'):/мощно|взрывно/i.test(s)?.8:/контролир/i.test(s)?2:1.5);
+  });
+  if(mv.length<2)return null;
+  const dir=s=>(s.match(/вниз|вверх|к лицу|назад|вперёд/i)||[''])[0].toLowerCase();
+  return {t0:mv[0],pause:pause,t1:mv[1],d0:dir(seg[0]),d1:dir(seg[seg.length-1])};
+}
+function tempoFor(key){
+  const e=typeof EX!=='undefined'&&EX[key];const tp=e&&parseTempo(e.tempo);if(!tp||key==='plank')return null;
+  const tail=.35,T=tp.t0+tp.pause+tp.t1+tail,ez=u=>.5-.5*Math.cos(Math.PI*Math.min(1,Math.max(0,u)));
+  if(e.tempoSwap){const u=tp.t1,dn=tp.t0,top=tail;
+    return {T,p:cyc=>{const t=cyc*T;
+      if(t<u)return ez(t/u);
+      if(t<u+top)return 1;
+      if(t<u+top+dn)return 1-ez((t-u-top)/dn);
+      return 0},
+    ph:cyc=>cyc*T<u+top?0:1,info:tp};}
+  return {T,p:cyc=>{const t=cyc*T;
+      if(t<tp.t0)return ez(t/tp.t0);
+      if(t<tp.t0+tp.pause)return 1;
+      if(t<tp.t0+tp.pause+tp.t1)return 1-ez((t-tp.t0-tp.pause)/tp.t1);
+      return 0},
+    ph:cyc=>cyc*T<tp.t0+tp.pause?0:1,info:tp};
+}
 function player(svg,key,opts={}){
   const fig=makeFigure(svg);const draw=p=>fig.draw(p,key);
-  const st={speed:1,paused:false,t:0,last:performance.now(),reps:0,raf:0,cyc:0,onPhase:null,onRep:null,period:opts.period||3.6,hold:key==='plank'};
+  const tp=opts.tempo===false?null:tempoFor(key);
+  const st={speed:1,paused:false,t:0,last:performance.now(),reps:0,raf:0,cyc:0,onPhase:null,onRep:null,period:tp?tp.T:(opts.period||3.6),hold:key==='plank'};
   function loop(now){
     const dt=(now-st.last)/1000;st.last=now;
     if(!st.paused){
       st.t+=dt*st.speed;
       const c=(st.t/st.period);
       const cyc=c-Math.floor(c);
-      const p=0.5-0.5*Math.cos(2*Math.PI*cyc);
+      const p=tp?tp.p(cyc):0.5-0.5*Math.cos(2*Math.PI*cyc);
       draw(p);
-      const ph=cyc<0.5?0:1;
+      const ph=tp?tp.ph(cyc):(cyc<0.5?0:1);
       if(ph!==st.cyc){st.cyc=ph;st.onPhase&&st.onPhase(ph);}
       const n=Math.floor(c);
       if(n!==st.reps){st.reps=n;st.onRep&&st.onRep(n);}

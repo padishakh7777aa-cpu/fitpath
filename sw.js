@@ -2,7 +2,7 @@
    - index.html и manifest.json: сеть сначала (чтобы обновления доходили), кэш как запасной вариант
    - остальные файлы приложения: из кэша сразу, в фоне обновляются (stale-while-revalidate)
    Версия в CACHE меняется при релизе, старые кэши удаляются. */
-const CACHE='lw-v1';
+const CACHE='lw-v2';
 self.addEventListener('install',e=>{self.skipWaiting()});
 self.addEventListener('activate',e=>{
   e.waitUntil((async()=>{

@@ -150,6 +150,9 @@ EX.lateral={name:'Махи гантелей в стороны',muscles:'Сред
 EX.skull={name:'Французский жим лёжа',muscles:'Трицепс',phases:['Вниз — к макушке, локти смотрят вверх','Вверх — разгибаем руки, плечи неподвижны'],
   steps:['Лёжа, штанга над грудью, руки прямые.','Согни локти, опусти штангу ко лбу или чуть за голову.','Локти смотрят вверх и не разъезжаются.','Разогни руки без рывка, плечи неподвижны.'],
   mistakes:['Локти разъезжаются в стороны','Работает плечо вместо трицепса','Слишком тяжёлый вес'],tempo:'2 сек вниз · пауза · 1 сек вверх'};
+EX.ohext={name:'Разгибание рук из-за головы',muscles:'Трицепс (длинная головка)',phases:['Вниз — предплечья уходят за голову, локти смотрят вверх','Вверх — разгибаем руки, локти почти не двигаются'],
+  steps:['Встань или сядь прямо, гантель или EZ-гриф двумя руками над головой.','Локти смотрят вверх и не разъезжаются; корпус не прогибается.','Опусти груз за голову до комфортного растяжения трицепса.','Разогни руки вверх, плечи и локти остаются на месте.'],
+  mistakes:['Локти разъезжаются в стороны','Прогиб в пояснице','Слишком тяжёлый вес — боль в локтях'],tempo:'2 сек вниз · пауза · 1 сек вверх'};
 EX.legext={name:'Разгибания ног в тренажёре',muscles:'Квадрицепс',phases:['Вверх — разгибаем ноги, сжимаем квадрицепс','Вниз — медленно, под контролем'],
   steps:['Сядь, спина прижата, валик на голенях у стоп.','Разогни ноги до конца, сожми квадрицепс на секунду.','Опусти медленно за 2–3 секунды.','Не раскачивай корпус и не бросай вес.'],
   mistakes:['Рывок и раскачка','Неполное разгибание','Бросание веса вниз'],tempo:'1 сек вверх · пауза · 3 сек вниз'};
@@ -159,7 +162,9 @@ EX.legcurl={name:'Сгибания ног сидя в тренажёре',muscle
 EX.facepull={name:'Тяга к лицу на блоке',muscles:'Задние дельты, верх спины, вращатели плеча',phases:['К лицу — локти выше кистей, разводим руки','Вперёд — плавно, с растяжкой лопаток'],
   steps:['Канат на уровне лица, хват мягкий.','Тяни к лицу, локти идут в стороны и выше кистей.','В конце разведи кисти по сторонам от лица.','Лёгкий вес, чистая техника, без раскачки.'],
   mistakes:['Слишком тяжёлый вес','Корпус откидывается назад','Локти ниже кистей'],tempo:'1 сек к лицу · пауза · 2 сек назад'};
-const MUS={skull:['arms'],legext:['legs'],legcurl:['legs'],facepull:['shoulders','back'],incline:['chest','shoulders','arms'],legpress:['legs','glutes'],lateral:['shoulders'],dips:['chest','arms','shoulders'],pulldown:['back','arms'],hipthrust:['glutes','legs'],pushdown:['arms'],squat:['legs','glutes','abs'],lunge:['legs','glutes'],pushup:['chest','shoulders','arms'],plank:['abs','shoulders'],
+// В позе первая фаза — подъём, а в темпе первым записано опускание: порядок меняется в tempoFor()
+EX.bench.tempoSwap=EX.incline.tempoSwap=EX.legpress.tempoSwap=true;
+const MUS={ohext:['arms'],skull:['arms'],legext:['legs'],legcurl:['legs'],facepull:['shoulders','back'],incline:['chest','shoulders','arms'],legpress:['legs','glutes'],lateral:['shoulders'],dips:['chest','arms','shoulders'],pulldown:['back','arms'],hipthrust:['glutes','legs'],pushdown:['arms'],squat:['legs','glutes','abs'],lunge:['legs','glutes'],pushup:['chest','shoulders','arms'],plank:['abs','shoulders'],
   deadlift:['back','glutes','legs'],bench:['chest','shoulders','arms'],ohp:['shoulders','arms','abs'],pullup:['back','arms'],
   bridge:['glutes','legs'],row:['back','arms'],rdl:['glutes','legs','back'],curl:['arms'],calf:['legs']};
 // заменяем текстовые упражнения на анимированные
