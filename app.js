@@ -1,4 +1,4 @@
-const APP_VERSION='2.0.0';
+const APP_VERSION='2.0.1';
 // ---- ленивая загрузка 3D (three.js, персонаж): подгружается в фоне после первого экрана ----
 const ASSET_Q=(()=>{try{const s=document.currentScript&&document.currentScript.src||'';return s.includes('?')?'?'+s.split('?')[1]:''}catch(e){return ''}})();
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=res;s.onerror=()=>rej(new Error('load '+src));document.head.appendChild(s)})}

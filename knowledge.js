@@ -22,6 +22,11 @@ const SRC={
  morton2018:{t:'Morton RW, Murphy KT, McKellar SR и др. Effect of protein supplementation on resistance training-induced gains in muscle mass and strength: systematic review, meta-analysis and meta-regression. Br J Sports Med, 2018.',u:'https://pubmed.ncbi.nlm.nih.gov/28698222/'},
  helms2014:{t:'Helms ER, Aragon AA, Fitschen PJ. Evidence-based recommendations for natural bodybuilding contest preparation: nutrition and supplementation. J Int Soc Sports Nutr, 2014.',u:'https://pubmed.ncbi.nlm.nih.gov/24864135/'},
  kreider2017:{t:'Kreider RB и др. International Society of Sports Nutrition position stand: safety and efficacy of creatine supplementation in exercise, sport, and medicine. J Int Soc Sports Nutr, 2017.',u:'https://pubmed.ncbi.nlm.nih.gov/28615996/'},
+ guest2021:{t:'Guest NS и др. International Society of Sports Nutrition position stand: caffeine and exercise performance. J Int Soc Sports Nutr, 2021.',u:'https://pmc.ncbi.nlm.nih.gov/articles/PMC7777221'},
+ currier2023:{t:'Currier BS и др. Resistance training prescription for muscle strength and hypertrophy in healthy adults: a systematic review and Bayesian network meta-analysis. Br J Sports Med, 2023.',u:'https://bjsm.bmj.com/content/57/18/1211'},
+ ralston2017:{t:'Ralston GW и др. The effect of weekly set volume on strength gain: a meta-analysis. Sports Med, 2017.',u:'https://pubmed.ncbi.nlm.nih.gov/28755103/'},
+ warneke2024:{t:'Warneke K и др. Effects of chronic static stretching on maximal strength and muscle hypertrophy: a systematic review and meta-analysis with meta-regression. Sports Med Open, 2024.',u:'https://pmc.ncbi.nlm.nih.gov/articles/PMC11026323'},
+ arntz2024:{t:'Arntz F и др. Chronic effects of static stretching exercises on skeletal muscle hypertrophy in healthy individuals: a systematic review and multilevel meta-analysis. Sports Med Open, 2024.',u:'https://pmc.ncbi.nlm.nih.gov/articles/PMC11438763'},
  grgic2020:{t:'Grgic J и др. Wake up and smell the coffee: caffeine supplementation and exercise performance — an umbrella review of 21 published meta-analyses. Br J Sports Med, 2020.',u:'https://bjsm.bmj.com/content/54/11/681'}
 };
 
@@ -35,7 +40,7 @@ const MECH=[
  {id:'volume',ico:'📊',t:'Объём: сколько подходов нужно',grade:'strong',
   find:['Метаанализ 15 исследований: чем больше подходов на мышцу в неделю, тем больше рост, причём зависимость выражена до порядка 10 и более подходов (Schoenfeld 2017).','Позиция ACSM 2026 (обзор 137 обзоров): для роста мышц ориентир около 10 подходов на группу мышц в неделю.','Метарегрессия Pelland и соавт.: у роста мышц отдача от добавления подходов убывает, у силы убывает сильнее.'],
   use:['Для большинства людей разумная цель — от 10 рабочих подходов в неделю на крупную группу.','Выше примерно 20 подходов выигрыш невелик, а утомление растёт: добавляй объём постепенно и только если прогресс стоит.','Новичку для старта достаточно меньше: растёт почти любой разумный объём.'],
-  limits:['Большая часть исследований на нетренированных людях и коротких сроках.','Единой «оптимальной цифры» нет: она зависит от человека, мышцы и восстановления.'],src:['sch2017vol','acsm2026','pelland']},
+  limits:['Большая часть исследований на нетренированных людях и коротких сроках.','Единой «оптимальной цифры» нет: она зависит от человека, мышцы и восстановления.'],src:['sch2017vol','ralston2017','currier2023','acsm2026','pelland']},
  {id:'frequency',ico:'📅',t:'Частота: сколько раз в неделю на мышцу',grade:'moderate',
   find:['Метаанализ 2016: нагружать крупные мышцы минимум дважды в неделю лучше, чем раз.','Когда объём уравнен, частота уже не даёт значимой разницы (Schoenfeld 2019).','ACSM 2026: тренировать все основные мышцы минимум дважды в неделю важнее, чем искать «идеальную» схему.'],
   use:['Делай 2 тренировки в неделю на каждую крупную группу: так проще набрать объём без гигантских сессий.','Если удобнее 3 раза в неделю на всё тело, это тоже работает.'],
@@ -72,6 +77,8 @@ const MECH=[
 
 // Что полезно знать о методах, которые часто рекламируют
 const MYTHS=[
+ ['Растяжка как способ набрать мышцы','Два метаанализа 2024 расходятся: Warneke нашёл небольшой рост силы и мышц при длительной растяжке, Arntz счёл эффект на гипертрофию неясным и ничтожным. Растяжка полезна для подвижности, но заменой силовой тренировки не является.'],
+ ['«Один подход до отказа хватит»','Метаанализ Ralston 2017: средний и высокий недельный объём даёт больше силы, чем низкий. Currier 2023: для гипертрофии лучшие схемы включали несколько подходов. Один подход лучше, чем ничего, но обычно проигрывает нескольким.'],
  ['Секретные «методики чемпионов»','Названные по именам программы (например, «Heavy Duty», «золотая эра») основаны на традиции. Контролируемых исследований, что они лучше простой схемы с достаточным объёмом и прогрессом, нет.'],
  ['Дропсеты, рест-пауза, «шок»','Отдельные приёмы не имеют стабильного преимущества над обычными подходами при равном объёме. Они полезны, чтобы сэкономить время, но не нужны для результата.'],
  ['Идеальный тип оборудования','ACSM 2026: тип оборудования (тренажёры или свободные веса) не влиял на результат стабильно. Выбирай то, что безопасно и нравится.'],
@@ -157,7 +164,7 @@ const LABS=[
 
 // Добавки по уровню доказательности
 const BIOSUP=[
- {tier:'strong',items:[['Креатин моногидрат','обычно 3–5 г в день','Позиция ISSN 2017: безопасен у здоровых людей, улучшает результаты тренировок и силу.','kreider2017'],['Белок','1,6–2,2 г на кг веса в день из еды и добавок','Протеиновая добавка удобна, но не обязательна, если белок набирается из еды.','morton2018'],['Кофеин','около 3–6 мг на кг веса за 30–60 минут до тренировки; не поздно вечером','Зонтичный обзор 2020: улучшает силу, выносливость и мощность.','grgic2020']]},
+ {tier:'strong',items:[['Креатин моногидрат','обычно 3–5 г в день','Позиция ISSN 2017: поддерживающая доза 3–5 г в день (крупным атлетам иногда 5–10 г); безопасен у здоровых людей; нужен постоянный приём, не только в дни тренировок.','kreider2017'],['Белок','1,6–2,2 г на кг веса в день из еды и добавок','Протеиновая добавка удобна, но не обязательна, если белок набирается из еды.','morton2018'],['Кофеин','3–6 мг на кг веса примерно за 60 минут до тренировки (возможно, помогает и 2 мг/кг); не поздно вечером','Позиция ISSN 2021: самый стабильный эффект на выносливость; на силу и мощность эффект менее надёжен. 9 мг/кг даёт много побочных эффектов без пользы.','guest2021']]},
  {tier:'moderate',items:[['Витамин D','по анализу и назначению врача','Нужен при дефиците; профилактическая дозировка для всех не доказана.',''],['Омега-3 (EPA+DHA)','около 1–2 г в день, если мало рыбы','Польза для здоровья, на прирост мышц влияет слабо.','']]},
  {tier:'opinion',items:[['Магний, цитруллин, бета-аланин, таурин, глицин, ашваганда','—','Данные ограниченные или спорные; эффект небольшой, часто на отдельных группах. Не обязательны.',''],['NMN/NR, «тестобустеры»','—','Убедительных данных у людей нет, часть продуктов небезопасна.','']]}
 ];
