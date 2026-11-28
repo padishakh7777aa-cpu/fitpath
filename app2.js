@@ -8,8 +8,8 @@ function curProg(){let p=progById(S.prog);if(!p||false){p=PROGS.find(x=>x.lvl===
 const lastW=k=>{const a=S.log[k];return a&&a.length?a[a.length-1].w:''};
 
 /* ---------- План ---------- */
-// Плановые недели разгрузки только там, где они встроены в сам цикл. В остальных программах разгрузка «по состоянию».
-const DELOAD={'a-str4':[4,8]};
+// Плановых недель разгрузки нет: единственное найденное контролируемое исследование (Coleman 2024) не показало пользы. Разгрузка по состоянию.
+const DELOAD={};
 function weekInfo(P){
   let st=store.get('pstart',null);
   if(!st||st.id!==P.id){st={id:P.id,ts:Date.now()};store.set('pstart',st)}
